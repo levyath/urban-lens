@@ -6,7 +6,11 @@ import { ConfigModule } from '@nestjs/config/dist/config.module';
 import { GeocodeModule } from './modules/geocode/geocode.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, GeocodeModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    DatabaseModule,
+    GeocodeModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
