@@ -8,7 +8,7 @@ Write-Host ""
 
 # 1. Estatísticas gerais
 Write-Host "1. Estatísticas gerais:" -ForegroundColor Yellow
-docker exec osm-postgis psql -U osm -d osm -c @"
+docker exec osm-postgis-dev psql -U osm -d osm -c @"
 SELECT 
     'Points' as tipo,
     COUNT(*) as total,
@@ -26,7 +26,7 @@ WHERE highway IS NOT NULL;
 
 Write-Host ""
 Write-Host "2. Top 10 tipos de pontos de interesse:" -ForegroundColor Yellow
-docker exec osm-postgis psql -U osm -d osm -c @"
+docker exec osm-postgis-dev psql -U osm -d osm -c @"
 SELECT 
     amenity,
     COUNT(*) as quantidade
@@ -39,12 +39,12 @@ LIMIT 10;
 
 Write-Host ""
 Write-Host "3. Hospitais (primeiros 10):" -ForegroundColor Yellow
-docker exec osm-postgis psql -U osm -d osm -c @"
+docker exec osm-postgis-dev psql -U osm -d osm -c @"
 SELECT 
     name,
     amenity,
-    ST_Y(way) as latitude,
-    ST_X(way) as longitude
+    ST_Y(ST_Transform(way, 4326)) as latitude,
+    ST_X(ST_Transform(way, 4326)) as longitude
 FROM planet_osm_point
 WHERE amenity = 'hospital' AND name IS NOT NULL
 LIMIT 10;
@@ -52,11 +52,11 @@ LIMIT 10;
 
 Write-Host ""
 Write-Host "4. Tipos de ruas:" -ForegroundColor Yellow
-docker exec osm-postgis psql -U osm -d osm -c @"
+docker exec osm-postgis-dev psql -U osm -d osm -c @"
 SELECT 
     highway as tipo_via,
     COUNT(*) as quantidade,
-    pg_size_pretty(SUM(ST_Length(way::geography))::bigint) as extensao_total
+    pg_size_pretty(SUM(ST_Length(ST_Transform(way, 4326)::geography))::bigint) as extensao_total
 FROM planet_osm_line
 WHERE highway IS NOT NULL
 GROUP BY highway
@@ -68,7 +68,7 @@ Write-Host ""
 Write-Host "=== Mais exemplos ===" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Para consultas personalizadas, use:" -ForegroundColor Green
-Write-Host "  docker exec -it osm-postgis psql -U osm -d osm" -ForegroundColor White
+Write-Host "  docker exec -it osm-postgis-dev psql -U osm -d osm" -ForegroundColor White
 Write-Host ""
 Write-Host "Exemplos de consultas SQL:" -ForegroundColor Green
 Write-Host "  -- Buscar por cidade" -ForegroundColor Gray

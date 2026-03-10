@@ -3,7 +3,7 @@
 
 # Caso você não tenha o osm2pgsql instalado, pode baixar em: https://osm2pgsql.org/doc/install.html
 # EDITE AQUI: Caminho para o osm2pgsql.exe
-$osm2pgsqlPath = "C:\osm2pgsql\osm2pgsql-bin\osm2pgsql.exe"
+$osm2pgsqlPath = "C:\osm2pgsql-bin\osm2pgsql.exe"
 
 # Verificar se existe
 if (-not (Test-Path $osm2pgsqlPath)) {
