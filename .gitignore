@@ -1,2 +1,3 @@
 /infra/maps/*.osm.pbf
 /infra/docker/db-data
+/docs
