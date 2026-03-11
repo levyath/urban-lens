@@ -51,4 +51,21 @@ export class PlacesService {
 
     return result.map((row) => row.amenity);
   }
+
+  async getClusters(): Promise<unknown[]> {
+    const query = `
+    SELECT
+      amenity,
+      COUNT(*) AS total,
+      ST_Y(ST_Centroid(ST_Collect(way))) AS lat,
+      ST_X(ST_Centroid(ST_Collect(way))) AS lon
+    FROM planet_osm_point
+    WHERE amenity IS NOT NULL
+    GROUP BY amenity
+    ORDER BY total DESC
+    LIMIT 20
+  `;
+
+    return this.dataSource.query(query);
+  }
 }

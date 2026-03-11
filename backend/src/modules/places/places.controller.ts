@@ -24,4 +24,9 @@ export class PlacesController {
   async getCategories(): Promise<unknown[]> {
     return this.placesService.getCategories();
   }
+
+  @Get('clusters')
+  async clusters(): Promise<unknown[]> {
+    return this.placesService.getClusters();
+  }
 }
