@@ -5,6 +5,7 @@ import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config/dist/config.module';
 import { GeocodeModule } from './modules/geocode/geocode.module';
 import { PlacesModule } from './modules/places/places.module';
+import { TransportsModule } from './modules/transports/transports.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { PlacesModule } from './modules/places/places.module';
     DatabaseModule,
     GeocodeModule,
     PlacesModule,
+    TransportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
