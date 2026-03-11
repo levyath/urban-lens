@@ -20,7 +20,6 @@ export class PlacesController {
     );
   }
 
-  // # TODO: limpar o retorno para aqueles desejados por nosso projeto
   @Get('categories')
   async getCategories(): Promise<unknown[]> {
     return this.placesService.getCategories();
