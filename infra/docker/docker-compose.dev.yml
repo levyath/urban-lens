@@ -19,3 +19,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  nominatim:
+    image: mediagis/nominatim:4.3
+    container_name: osm-nominatim
+    ports:
+      - "8080:8080"
+
+    environment:
+      PBF_PATH: /data/sudeste-260306.osm.pbf
+
+    volumes:
+      - ../maps:/data
