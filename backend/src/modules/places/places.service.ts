@@ -15,7 +15,7 @@ export class PlacesService {
     const query = `
       SELECT
     name,
-    amenity,
+    amenity AS type,
     ST_Y(ST_Transform(way,4326)) AS lat,
     ST_X(ST_Transform(way,4326)) AS lon,
     ST_Distance(
@@ -25,7 +25,7 @@ export class PlacesService {
   FROM planet_osm_point
   WHERE amenity IS NOT NULL
   AND name IS NOT NULL
-  AND ($4::text IS NULL OR amenity = $4::text)
+  AND ($4::text IS NULL OR amenity = ANY(string_to_array($4::text, ',')))
   AND ST_DWithin(
     ST_Transform(way,4326)::geography,
     ST_SetSRID(ST_MakePoint($1,$2),4326)::geography,
@@ -35,7 +35,7 @@ export class PlacesService {
   LIMIT 20
   `;
 
-    return await this.dataSource.query(query, [lon, lat, radius, type]);
+    return await this.dataSource.query(query, [lon, lat, radius, type ?? null]);
   }
 
   async getCategories(): Promise<unknown[]> {
