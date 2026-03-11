@@ -1,47 +1,68 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { GeocodeResultDto } from './dto/geocode-result.dto';
+import { PlacesService } from '../places/places.service';
 
 interface NominatimResult {
   display_name: string;
   lat: string;
   lon: string;
+  boundingbox: [string, string, string, string];
 }
 
 @Injectable()
 export class GeocodeService {
-  constructor(private httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly placesService: PlacesService,
+  ) {}
 
   async geocode(
     address: string,
-  ): Promise<
-    { address: string; lat: string; lon: string } | { message: string }
-  > {
-    const url = 'https://nominatim.openstreetmap.org/search';
+  ): Promise<{ query: string; count: number; results: GeocodeResultDto[] }> {
+    const url = `${process.env.NOMINATIM_URL}/search`;
 
     const response = await firstValueFrom(
       this.httpService.get<NominatimResult[]>(url, {
         params: {
           q: address,
           format: 'json',
-          limit: 1,
-        },
-        headers: {
-          'User-Agent': 'geoscope-app',
+          addressdetails: 1,
+          limit: 5,
+          countrycodes: 'br',
         },
       }),
     );
 
-    const result = response.data[0];
+    return {
+      query: address,
+      count: response.data.length,
+      results: response.data.map((item) => ({
+        address: item.display_name,
+        lat: Number(item.lat),
+        lon: Number(item.lon),
+        boundingBox: {
+          south: Number(item.boundingbox[0]),
+          north: Number(item.boundingbox[1]),
+          west: Number(item.boundingbox[2]),
+          east: Number(item.boundingbox[3]),
+        },
+      })),
+    };
+  }
 
-    if (!result) {
-      return { message: 'Endereço não encontrado' };
+  async findNearbyByAddress(address: string, radius: number, types?: string) {
+    const geo = await this.geocode(address);
+
+    if (geo.count === 0) {
+      throw new NotFoundException(
+        `Nenhum endereço encontrado para: ${address}`,
+      );
     }
 
-    return {
-      address: result.display_name,
-      lat: result.lat,
-      lon: result.lon,
-    };
+    const first = geo.results[0];
+
+    return this.placesService.findNearby(first.lat, first.lon, radius, types);
   }
 }
