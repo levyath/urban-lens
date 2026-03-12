@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config/dist/config.module';
 import { GeocodeModule } from './modules/geocode/geocode.module';
 import { PlacesModule } from './modules/places/places.module';
 import { TransportsModule } from './modules/transports/transports.module';
+import { VulnerabilityModule } from './modules/vulnerability/vulnerability.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TransportsModule } from './modules/transports/transports.module';
     GeocodeModule,
     PlacesModule,
     TransportsModule,
+    VulnerabilityModule,
   ],
   controllers: [AppController],
   providers: [AppService],
