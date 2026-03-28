@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { GeocodeResultDto } from './dto/geocode-result.dto';
-import { PlacesService } from '../places/places.service';
+import { PlacesNearbyResult, PlacesService } from '../places/places.service';
 
 interface NominatimResult {
   display_name: string;
@@ -52,7 +52,13 @@ export class GeocodeService {
     };
   }
 
-  async findNearbyByAddress(address: string, radius: number, types?: string) {
+  async findNearbyByAddress(
+    address: string,
+    radius: number,
+    types?: string,
+    page = 1,
+    pageSize = 50,
+  ): Promise<PlacesNearbyResult> {
     const geo = await this.geocode(address);
 
     if (geo.count === 0) {
@@ -63,6 +69,13 @@ export class GeocodeService {
 
     const first = geo.results[0];
 
-    return this.placesService.findNearby(first.lat, first.lon, radius, types);
+    return this.placesService.findNearby(
+      first.lat,
+      first.lon,
+      radius,
+      types,
+      page,
+      pageSize,
+    );
   }
 }

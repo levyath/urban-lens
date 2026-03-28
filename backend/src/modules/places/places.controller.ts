@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { PlacesService } from './places.service';
+import { PlacesNearbyResult, PlacesService } from './places.service';
 
 @Controller('places')
 export class PlacesController {
@@ -11,12 +11,16 @@ export class PlacesController {
     @Query('lon') lon: number,
     @Query('radius') radius = 1000,
     @Query('type') type?: string,
-  ): Promise<unknown[]> {
+    @Query('page') page = 1,
+    @Query('page_size') pageSize = 50,
+  ): Promise<PlacesNearbyResult> {
     return this.placesService.findNearby(
       Number(lat),
       Number(lon),
       Number(radius),
       type,
+      Number(page),
+      Number(pageSize),
     );
   }
 
