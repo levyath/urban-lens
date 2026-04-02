@@ -7,6 +7,7 @@ import { GeocodeModule } from './modules/geocode/geocode.module';
 import { PlacesModule } from './modules/places/places.module';
 import { TransportsModule } from './modules/transports/transports.module';
 import { VulnerabilityModule } from './modules/vulnerability/vulnerability.module';
+import { CispStatisticModule } from './modules/criminal-statistic/cisp-statistic.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { VulnerabilityModule } from './modules/vulnerability/vulnerability.modul
     PlacesModule,
     TransportsModule,
     VulnerabilityModule,
+    CispStatisticModule,
   ],
   controllers: [AppController],
   providers: [AppService],
