@@ -12,7 +12,7 @@ export class PlacesController {
     @Query('radius') radius = 1000,
     @Query('type') type?: string,
     @Query('page') page = 1,
-    @Query('page_size') pageSize = 50,
+    @Query('page_size') pageSize = 20,
   ): Promise<PlacesNearbyResult> {
     return this.placesService.findNearby(
       Number(lat),
