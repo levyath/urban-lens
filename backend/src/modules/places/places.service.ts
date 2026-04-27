@@ -109,16 +109,33 @@ export class PlacesService {
     };
   }
 
-  async getCategories(): Promise<unknown[]> {
+  async getCategories(search?: string | string[]): Promise<unknown[]> {
+    const rawTerms = Array.isArray(search)
+      ? search
+      : typeof search === 'string'
+        ? search.split(',')
+        : [];
+
+    const terms = rawTerms
+      .map((term) => term.trim())
+      .filter((term) => term.length > 0);
+
+    const uniquePatterns = terms.length
+      ? Array.from(new Set(terms)).map((term) => `%${term}%`)
+      : null;
+
     const query = `
     SELECT DISTINCT amenity
     FROM planet_osm_point
     WHERE amenity IS NOT NULL
+      AND ($1::text[] IS NULL OR amenity ILIKE ANY($1::text[]))
     ORDER BY amenity
   `;
 
-    const result: Array<{ amenity: string }> =
-      await this.dataSource.query(query);
+    const result: Array<{ amenity: string }> = await this.dataSource.query(
+      query,
+      [uniquePatterns],
+    );
 
     return result.map((row) => row.amenity);
   }

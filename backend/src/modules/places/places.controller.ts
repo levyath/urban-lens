@@ -25,8 +25,10 @@ export class PlacesController {
   }
 
   @Get('categories')
-  async getCategories(): Promise<unknown[]> {
-    return this.placesService.getCategories();
+  async getCategories(
+    @Query('search') search?: string | string[],
+  ): Promise<unknown[]> {
+    return this.placesService.getCategories(search);
   }
 
   @Get('clusters')
