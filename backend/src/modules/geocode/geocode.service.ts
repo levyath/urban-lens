@@ -20,8 +20,26 @@ export class GeocodeService {
 
   async geocode(
     address: string,
-  ): Promise<{ query: string; count: number; results: GeocodeResultDto[] }> {
+    page = 1,
+    pageSize = 5,
+  ): Promise<{
+    query: string;
+    count: number;
+    page: number;
+    page_size: number;
+    offset: number;
+    results: GeocodeResultDto[];
+  }> {
     const url = `${process.env.NOMINATIM_URL}/search`;
+
+    const pageNumber = Number(page);
+    const pageSizeNumber = Number(pageSize);
+
+    const safePage = Number.isFinite(pageNumber) ? Math.max(1, pageNumber) : 1;
+    const safePageSize = Number.isFinite(pageSizeNumber)
+      ? Math.min(Math.max(1, pageSizeNumber), 50)
+      : 5;
+    const offset = (safePage - 1) * safePageSize;
 
     const response = await firstValueFrom(
       this.httpService.get<NominatimResult[]>(url, {
@@ -29,7 +47,8 @@ export class GeocodeService {
           q: address,
           format: 'json',
           addressdetails: 1,
-          limit: 5,
+          limit: safePageSize,
+          offset,
           countrycodes: 'br',
         },
       }),
@@ -38,6 +57,9 @@ export class GeocodeService {
     return {
       query: address,
       count: response.data.length,
+      page: safePage,
+      page_size: safePageSize,
+      offset,
       results: response.data.map((item) => ({
         address: item.display_name,
         lat: Number(item.lat),
@@ -59,7 +81,7 @@ export class GeocodeService {
     page = 1,
     pageSize = 50,
   ): Promise<PlacesNearbyResult> {
-    const geo = await this.geocode(address);
+    const geo = await this.geocode(address, 1, 1);
 
     if (geo.count === 0) {
       throw new NotFoundException(

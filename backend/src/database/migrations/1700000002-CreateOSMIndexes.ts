@@ -3,7 +3,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class CreateOSMIndexes1700000002 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     console.log('🔍 Verificando se tabela planet_osm_point existe...');
-    
+
     // Verificar se a tabela existe (criada pelo osm2pgsql)
     const tableExists = await queryRunner.query(`
       SELECT EXISTS (
@@ -11,10 +11,12 @@ export class CreateOSMIndexes1700000002 implements MigrationInterface {
         WHERE table_name = 'planet_osm_point'
       );
     `);
-    
+
     if (!tableExists[0].exists) {
       console.log('⚠️  Tabela planet_osm_point não existe ainda.');
-      console.log('   Execute o import OSM primeiro: infra/scripts/import-local.ps1');
+      console.log(
+        '   Execute o import OSM primeiro: infra/scripts/import-local.ps1',
+      );
       return;
     }
 
@@ -69,9 +71,15 @@ export class CreateOSMIndexes1700000002 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     console.log('🗑️  Removendo índices OSM...');
 
-    await queryRunner.query(`DROP INDEX IF EXISTS idx_planet_osm_point_railway;`);
-    await queryRunner.query(`DROP INDEX IF EXISTS idx_planet_osm_point_highway;`);
-    await queryRunner.query(`DROP INDEX IF EXISTS idx_planet_osm_point_amenity;`);
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS idx_planet_osm_point_railway;`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS idx_planet_osm_point_highway;`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS idx_planet_osm_point_amenity;`,
+    );
     await queryRunner.query(`DROP INDEX IF EXISTS idx_planet_osm_point_geog;`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_planet_osm_point_way;`);
 

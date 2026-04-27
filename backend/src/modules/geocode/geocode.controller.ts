@@ -7,8 +7,12 @@ export class GeocodeController {
   constructor(private readonly geocodeService: GeocodeService) {}
 
   @Get()
-  geocode(@Query('address') address: string) {
-    return this.geocodeService.geocode(address);
+  geocode(
+    @Query('address') address: string,
+    @Query('page') page = 1,
+    @Query('page_size') pageSize = 10,
+  ) {
+    return this.geocodeService.geocode(address, Number(page), Number(pageSize));
   }
 
   @Get('nearby-by-address')
