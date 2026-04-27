@@ -14,7 +14,7 @@ export class TransportsController {
     @Query('lon') long: number,
     @Query('radius') radius = 1000,
     @Query('page') page = 1,
-    @Query('page_size') pageSize = 50,
+    @Query('page_size') pageSize = 20,
   ): Promise<NearbyTransportsResult> {
     return await this.transportsService.findNearbyTransports(
       Number(lat),
