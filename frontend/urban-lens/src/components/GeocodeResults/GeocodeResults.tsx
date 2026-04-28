@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { Icon } from '@iconify/react';
 import type { GeocodeResultItem } from '../../types';
 import './GeocodeResults.scss';
 
@@ -70,7 +71,10 @@ export const GeocodeResults = ({
   if (isLoading && results.length === 0) {
     return (
       <div className="geocode-results geocode-results--loading">
-        <div className="geocode-results__spinner">Buscando endereços...</div>
+        <div className="geocode-results__spinner">
+          <Icon icon="eos-icons:loading" width="24" height="24" />
+          <span>Buscando endereços...</span>
+        </div>
       </div>
     );
   }
@@ -112,9 +116,11 @@ export const GeocodeResults = ({
             className="geocode-results__item"
             onClick={() => onSelectResult(item)}
           >
-            <div className="geocode-results__address">{item.address}</div>
-            <div className="geocode-results__coordinates">
-              {item.lat.toFixed(6)}, {item.lon.toFixed(6)}
+            <div className="geocode-results__item-content">
+              <div className="geocode-results__address">{item.address}</div>
+              <div className="geocode-results__coordinates">
+                {item.lat.toFixed(6)}, {item.lon.toFixed(6)}
+              </div>
             </div>
           </div>
         ))}
@@ -123,7 +129,7 @@ export const GeocodeResults = ({
           <div ref={loadMoreRef} className="geocode-results__load-more">
             {isLoadingMore ? (
               <div className="geocode-results__loading-more">
-                <div className="geocode-results__spinner-small"></div>
+                <Icon icon="eos-icons:loading" width="16" height="16" />
                 Carregando mais resultados...
               </div>
             ) : (
