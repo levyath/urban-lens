@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Icon } from '@iconify/react';
 import { useGeocoding } from '../../hooks/useGeocoding';
 import { GeocodeResults } from '../GeocodeResults/GeocodeResults';
 import type { GeocodeResultItem } from '../../types';
@@ -75,6 +76,10 @@ export const SearchBar = ({
 
       <div className="search-bar-container" ref={containerRef}>
         <form className="search-bar" onSubmit={handleSubmit}>
+          <span className="search-bar__icon">
+            <Icon icon="fa6-solid:magnifying-glass" width="18" height="18" />
+          </span>
+          
           <input
             type="text"
             className="search-bar__input"
@@ -83,22 +88,38 @@ export const SearchBar = ({
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={isLoading}
           />
+          
+          {searchTerm && (
+            <>
+              <button
+                type="button"
+                className="search-bar__clear"
+                onClick={handleClear}
+                title="Limpar"
+              >
+                <Icon icon="mdi:close" width="20" height="20" />
+              </button>
+              <div className="search-bar__divider"></div>
+            </>
+          )}
+          
           <button 
             type="submit" 
             className="search-bar__button"
             disabled={isLoading || !searchTerm.trim()}
           >
-            {isLoading ? 'Buscando...' : 'Buscar'}
+            {isLoading ? (
+              <>
+                <Icon icon="eos-icons:loading" width="18" height="18" />
+                <span>Buscando</span>
+              </>
+            ) : (
+              <>
+                <Icon icon="mdi:target" width="18" height="18" />
+                <span>Buscar</span>
+              </>
+            )}
           </button>
-          {hasResults && (
-            <button
-              type="button"
-              className="search-bar__clear"
-              onClick={handleClear}
-            >
-              ✕
-            </button>
-          )}
         </form>
 
         <GeocodeResults
