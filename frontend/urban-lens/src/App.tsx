@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { SearchBar } from './components/SearchBar/SearchBar';
 import type { GeocodeResultItem } from './types';
 import './App.scss';
+import logoSvg from './assets/logo.svg';
 
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -158,7 +159,7 @@ function App() {
     <div className="app">
       <header className="header">
         <h1 className="header__brand">
-          <span className="header__icon">🗺️</span>
+          <img src={logoSvg} alt="Urban Lens" className="header__icon" />
           Urban Lens
         </h1>
         

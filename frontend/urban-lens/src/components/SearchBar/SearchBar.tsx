@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { Icon } from '@iconify/react';
 import { useGeocoding } from '../../hooks/useGeocoding';
 import { GeocodeResults } from '../GeocodeResults/GeocodeResults';
 import type { GeocodeResultItem } from '../../types';
@@ -77,7 +76,9 @@ export const SearchBar = ({
       <div className="search-bar-container" ref={containerRef}>
         <form className="search-bar" onSubmit={handleSubmit}>
           <span className="search-bar__icon">
-            <Icon icon="fa6-solid:magnifying-glass" width="18" height="18" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" width="20" height="20">
+              <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/>
+            </svg>
           </span>
           
           <input
@@ -97,7 +98,7 @@ export const SearchBar = ({
                 onClick={handleClear}
                 title="Limpar"
               >
-                <Icon icon="mdi:close" width="20" height="20" />
+                ✕
               </button>
               <div className="search-bar__divider"></div>
             </>
@@ -110,12 +111,12 @@ export const SearchBar = ({
           >
             {isLoading ? (
               <>
-                <Icon icon="eos-icons:loading" width="18" height="18" />
+                <span>⏳</span>
                 <span>Buscando</span>
               </>
             ) : (
               <>
-                <Icon icon="mdi:target" width="18" height="18" />
+                <span>🎯</span>
                 <span>Buscar</span>
               </>
             )}
