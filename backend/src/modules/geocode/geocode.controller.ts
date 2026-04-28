@@ -7,10 +7,26 @@ export class GeocodeController {
 
   @Get()
   geocode(
-    @Query('address') address: string,
+    @Query('address') address?: string,
+    @Query('street') street?: string,
+    @Query('number') number?: string,
+    @Query('city') city?: string,
+    @Query('state') state?: string,
+    @Query('country') country?: string,
+    @Query('postalcode') postalcode?: string,
     @Query('page') page = 1,
     @Query('page_size') pageSize = 10,
   ) {
-    return this.geocodeService.geocode(address, Number(page), Number(pageSize));
+    return this.geocodeService.geocode({
+      address,
+      street,
+      number,
+      city,
+      state,
+      country,
+      postalcode,
+      page: Number(page),
+      pageSize: Number(pageSize),
+    });
   }
 }
