@@ -1,0 +1,73 @@
+// Estilos do componente principal
+@use './styles/variables.scss' as *;
+
+.app {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: $bg-secondary;
+  
+  &__header {
+    background-color: $bg-primary;
+    padding: $spacing-md $spacing-lg;
+    box-shadow: $shadow-sm;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+    flex-wrap: wrap;
+    border-bottom: 1px solid $bg-tertiary;
+  }
+  
+  &__title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0;
+    white-space: nowrap;
+    letter-spacing: -0.025em;
+  }
+  
+  &__error {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    background-color: #fef2f2;
+    color: $danger-color;
+    border-left: 3px solid $danger-color;
+    border-radius: $border-radius-sm;
+    margin: 0;
+    font-size: 0.875rem;
+  }
+  
+  &__main {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    margin: $spacing-md;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-md;
+    background-color: $bg-primary;
+    
+    // Garantir que o main tenha altura definida
+    min-height: 0;
+  }
+}
+
+@media (max-width: $breakpoint-tablet) {
+  .app {
+    &__header {
+      padding: $spacing-sm $spacing-md;
+    }
+    
+    &__title {
+      font-size: 1.25rem;
+    }
+    
+    &__main {
+      margin: $spacing-sm;
+      border-radius: $border-radius-md;
+    }
+  }
+}
