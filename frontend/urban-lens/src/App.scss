@@ -51,6 +51,101 @@
     margin-left: auto;
   }
 
+  &__radius-control {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  &__radius-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #667eea;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &__radius-slider {
+    width: 140px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #667eea;
+      border: 2px solid white;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: scale(1.2);
+        background: #764ba2;
+      }
+    }
+
+    &::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: #667eea;
+      border: 2px solid white;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: scale(1.2);
+        background: #764ba2;
+      }
+    }
+  }
+
+  &__badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #667eea;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+      border-color: rgba(102, 126, 234, 0.3);
+    }
+  }
+
+  &__badge-icon {
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  &__badge-count {
+    font-weight: 700;
+    font-size: 15px;
+  }
+
   &__button {
     padding: 10px 20px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -92,49 +187,36 @@
 }
 
 .spacer {
-  height: 90px;
-}
-
-.info-bar {
-  padding: 12px 32px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
-  font-size: 14px;
-  color: #4b5563;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  backdrop-filter: blur(10px);
-
-  &__tip {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  &__icon {
-    font-size: 18px;
-  }
-
-  &__markers {
-    font-weight: 600;
-    color: #667eea;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+  height: 80px;
 }
 
 .error-banner {
-  width: 100%;
-  padding: 12px 32px;
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 600px;
+  width: calc(100% - 64px);
+  padding: 12px 24px;
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   color: #dc2626;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 500;
-  margin: 0 32px;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.1);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+  z-index: 999;
+  animation: slideDown 0.3s ease-out;
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
 }
 
 .main {
@@ -178,11 +260,11 @@
     height: 140px;
   }
 
-  .info-bar {
+  .error-banner {
+    top: 150px;
+    width: calc(100% - 32px);
     padding: 10px 16px;
-    flex-direction: column;
-    gap: 8px;
-    text-align: center;
+    font-size: 13px;
   }
 
   .main {

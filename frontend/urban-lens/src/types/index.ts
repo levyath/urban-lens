@@ -106,6 +106,7 @@ export interface VulnerabilityArea {
   distance_meters: number;
   is_inside: boolean;
   vulnerability_level: 'LOW' | 'MEDIUM' | 'HIGH';
+  geom_wkt: string;
 }
 
 export interface VulnerabilityLevelResponse {
