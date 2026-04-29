@@ -17,7 +17,7 @@ export function AnalysisPanel({ placesData, transportData, vulnerabilityData, cr
     return (
       <div className="analysis-panel analysis-panel--minimized">
         <div className="analysis-panel__header">
-          <h2 className="analysis-panel__title">📊 Análise</h2>
+          <h2 className="analysis-panel__title">📊 Análise da Região</h2>
           <button 
             className="analysis-panel__action-btn" 
             onClick={() => setIsMinimized(false)}
@@ -78,32 +78,6 @@ export function AnalysisPanel({ placesData, transportData, vulnerabilityData, cr
           
           {transportData ? (
             <>
-              <div className="analysis-section__summary">
-                <div className="stat-card">
-                  <div className="stat-card__icon">🚌</div>
-                  <div className="stat-card__content">
-                    <div className="stat-card__label">Pontos de Ônibus</div>
-                    <div className="stat-card__value">{transportData.summary.counts_by_type.bus_stops}</div>
-                  </div>
-                </div>
-                
-                <div className="stat-card">
-                  <div className="stat-card__icon">🚆</div>
-                  <div className="stat-card__content">
-                    <div className="stat-card__label">Estações de Trem</div>
-                    <div className="stat-card__value">{transportData.summary.counts_by_type.train_stations}</div>
-                  </div>
-                </div>
-                
-                <div className="stat-card">
-                  <div className="stat-card__icon">🚇</div>
-                  <div className="stat-card__content">
-                    <div className="stat-card__label">Entradas de Metrô</div>
-                    <div className="stat-card__value">{transportData.summary.counts_by_type.subway_entrances}</div>
-                  </div>
-                </div>
-              </div>
-
               <div className="analysis-section__score">
                 <div className="score-badge">
                   <span className="score-badge__label">Avaliação de Transporte</span>
@@ -117,26 +91,50 @@ export function AnalysisPanel({ placesData, transportData, vulnerabilityData, cr
                 </div>
               </div>
 
-              {transportData.summary.top_types && transportData.summary.top_types.length > 0 && (
-                <div className="analysis-section__highlight">
-                  <strong>Mais comum:</strong> 
-                  <span className="highlight-badge">
-                    {transportData.summary.top_types[0].type === 'bus_stop' ? '🚌 Ônibus' : 
-                     transportData.summary.top_types[0].type === 'train_station' ? '🚆 Trem' : '🚇 Metrô'}
-                    {' '}({transportData.summary.top_types[0].count})
-                  </span>
+              <div className="data-grid">
+                <div className="data-card">
+                  <div className="data-card__icon">🚌</div>
+                  <div className="data-card__content">
+                    <div className="data-card__value">{transportData.summary.counts_by_type.bus_stops}</div>
+                    <div className="data-card__label">Pontos de Ônibus</div>
+                  </div>
                 </div>
-              )}
+                
+                <div className="data-card">
+                  <div className="data-card__icon">🚆</div>
+                  <div className="data-card__content">
+                    <div className="data-card__value">{transportData.summary.counts_by_type.train_stations}</div>
+                    <div className="data-card__label">Estações de Trem</div>
+                  </div>
+                </div>
+                
+                <div className="data-card">
+                  <div className="data-card__icon">🚇</div>
+                  <div className="data-card__content">
+                    <div className="data-card__value">{transportData.summary.counts_by_type.subway_entrances}</div>
+                    <div className="data-card__label">Entradas de Metrô</div>
+                  </div>
+                </div>
+
+                <div className="data-card data-card--highlight">
+                  <div className="data-card__icon">📍</div>
+                  <div className="data-card__content">
+                    <div className="data-card__value">{transportData.summary.total}</div>
+                    <div className="data-card__label">Total de Transportes</div>
+                  </div>
+                </div>
+              </div>
             </>
           ) : (
-            <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
-              Nenhum dado de transporte disponível
-            </p>
+            <div className="empty-state">
+              <div className="empty-state__icon">🚇</div>
+              <p className="empty-state__text">Nenhum dado de transporte disponível</p>
+            </div>
           )}
         </section>
 
         <section className="analysis-section">
-          <h3 className="analysis-section__title">📍 Lugares Próximos</h3>
+          <h3 className="analysis-section__title">🏪 Lugares Próximos</h3>
           
           {placesData && placesData.data && placesData.data.length > 0 ? (
             <>
@@ -153,59 +151,62 @@ export function AnalysisPanel({ placesData, transportData, vulnerabilityData, cr
                 </div>
               </div>
 
-              <div className="analysis-section__summary">
-                <div className="stat-card stat-card--full">
-                  <div className="stat-card__icon">🏪</div>
-                  <div className="stat-card__content">
-                    <div className="stat-card__label">Total de Lugares</div>
-                    <div className="stat-card__value">{placesData.summary?.total || 0}</div>
+              <div className="data-grid">
+                <div className="data-card data-card--highlight data-card--full">
+                  <div className="data-card__icon">🏪</div>
+                  <div className="data-card__content">
+                    <div className="data-card__value">{placesData.summary?.total || 0}</div>
+                    <div className="data-card__label">Total de Lugares</div>
                   </div>
                 </div>
               </div>
 
               {placesData.summary?.top_types && placesData.summary.top_types.length > 0 && (
-                <div className="top-categories">
-                  <h4 className="top-categories__title">Categorias Principais</h4>
-                  <div className="top-categories__list">
+                <div className="detail-section">
+                  <h4 className="detail-section__title">Categorias Principais</h4>
+                  <div className="badge-list">
                     {placesData.summary.top_types.slice(0, 3).map((item: { type: string; count: number }, idx: number) => (
-                      <div key={idx} className="category-badge">
-                        <span className="category-badge__name">{item.type}</span>
-                        <span className="category-badge__count">{item.count}</span>
+                      <div key={idx} className="info-badge info-badge--success">
+                        <span className="info-badge__label">{item.type}</span>
+                        <span className="info-badge__value">{item.count}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div className="places-list">
-                {Object.entries(placesByType).slice(0, 3).map(([type, places]) => (
-                  <div key={type} className="place-group">
-                    <h4 className="place-group__title">
-                      {type} <span className="place-group__count">({places.length})</span>
-                    </h4>
-                    <ul className="place-group__list">
-                      {places.slice(0, 3).map((place, idx) => (
-                        <li key={idx} className="place-item">
-                          <span className="place-item__name">{place.name}</span>
-                          <span className="place-item__distance">
-                            {Math.round(place.distance)}m
-                          </span>
-                        </li>
-                      ))}
-                      {places.length > 3 && (
-                        <li className="place-item place-item--more">
-                          +{places.length - 3} mais
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                ))}
+              <div className="detail-section">
+                <h4 className="detail-section__title">Lugares por Categoria</h4>
+                <div className="places-list">
+                  {Object.entries(placesByType).slice(0, 3).map(([type, places]) => (
+                    <div key={type} className="place-group">
+                      <div className="place-group__header">
+                        <span className="place-group__title">{type}</span>
+                        <span className="place-group__count">{places.length}</span>
+                      </div>
+                      <ul className="place-group__list">
+                        {places.slice(0, 3).map((place, idx) => (
+                          <li key={idx} className="place-item">
+                            <span className="place-item__name">{place.name}</span>
+                            <span className="place-item__distance">{Math.round(place.distance)}m</span>
+                          </li>
+                        ))}
+                        {places.length > 3 && (
+                          <li className="place-item place-item--more">
+                            +{places.length - 3} mais
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           ) : (
-            <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
-              Nenhum lugar encontrado nesta região
-            </p>
+            <div className="empty-state">
+              <div className="empty-state__icon">🏪</div>
+              <p className="empty-state__text">Nenhum lugar encontrado nesta região</p>
+            </div>
           )}
         </section>
 
@@ -222,68 +223,72 @@ export function AnalysisPanel({ placesData, transportData, vulnerabilityData, cr
                     {'☆'.repeat(5 - vulnerabilityData.summary.vulnerability_stars)}
                   </div>
                   <span className="score-badge__subtitle">
-                    {vulnerabilityData.summary.vulnerability_stars}/5 estrelas
+                    {vulnerabilityData.summary.vulnerability_stars}/5 estrelas (maior = mais vulnerável)
                   </span>
                 </div>
               </div>
 
-              <div className="analysis-section__summary">
-                <div className="stat-card stat-card--danger">
-                  <div className="stat-card__icon">🏘️</div>
-                  <div className="stat-card__content">
-                    <div className="stat-card__label">Áreas Vulneráveis</div>
-                    <div className="stat-card__value">{vulnerabilityData.summary.total}</div>
+              <div className="data-grid">
+                <div className="data-card data-card--danger">
+                  <div className="data-card__icon">🏘️</div>
+                  <div className="data-card__content">
+                    <div className="data-card__value">{vulnerabilityData.summary.total}</div>
+                    <div className="data-card__label">Áreas Vulneráveis</div>
                   </div>
                 </div>
 
-                <div className="stat-card stat-card--danger">
-                  <div className="stat-card__icon">👥</div>
-                  <div className="stat-card__content">
-                    <div className="stat-card__label">População</div>
-                    <div className="stat-card__value">
+                <div className="data-card data-card--danger">
+                  <div className="data-card__icon">👥</div>
+                  <div className="data-card__content">
+                    <div className="data-card__value">
                       {vulnerabilityData.summary.total_population_sabren.toLocaleString()}
                     </div>
+                    <div className="data-card__label">População Total</div>
                   </div>
                 </div>
+
+                {vulnerabilityData.summary.nearest_distance_meters !== null && (
+                  <div className="data-card data-card--danger data-card--full">
+                    <div className="data-card__icon">📏</div>
+                    <div className="data-card__content">
+                      <div className="data-card__value">
+                        {Math.round(vulnerabilityData.summary.nearest_distance_meters)}m
+                      </div>
+                      <div className="data-card__label">Área Mais Próxima</div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="vulnerability-breakdown">
-                <h4 className="vulnerability-breakdown__title">Distribuição por Proximidade</h4>
-                <div className="vulnerability-breakdown__items">
+              <div className="detail-section">
+                <h4 className="detail-section__title">Distribuição por Proximidade</h4>
+                <div className="metric-list">
                   {vulnerabilityData.summary.high_count > 0 && (
-                    <div className="vulnerability-item vulnerability-item--high">
-                      <span className="vulnerability-item__label">Muito Próximo (&lt;300m)</span>
-                      <span className="vulnerability-item__count">{vulnerabilityData.summary.high_count}</span>
+                    <div className="metric-item metric-item--danger">
+                      <span className="metric-item__label">Muito Próximo (&lt;300m)</span>
+                      <span className="metric-item__value">{vulnerabilityData.summary.high_count}</span>
                     </div>
                   )}
                   {vulnerabilityData.summary.medium_count > 0 && (
-                    <div className="vulnerability-item vulnerability-item--medium">
-                      <span className="vulnerability-item__label">Próximo (300-800m)</span>
-                      <span className="vulnerability-item__count">{vulnerabilityData.summary.medium_count}</span>
+                    <div className="metric-item metric-item--warning">
+                      <span className="metric-item__label">Próximo (300-800m)</span>
+                      <span className="metric-item__value">{vulnerabilityData.summary.medium_count}</span>
                     </div>
                   )}
                   {vulnerabilityData.summary.low_count > 0 && (
-                    <div className="vulnerability-item vulnerability-item--low">
-                      <span className="vulnerability-item__label">Distante (&gt;800m)</span>
-                      <span className="vulnerability-item__count">{vulnerabilityData.summary.low_count}</span>
+                    <div className="metric-item metric-item--success">
+                      <span className="metric-item__label">Distante (&gt;800m)</span>
+                      <span className="metric-item__value">{vulnerabilityData.summary.low_count}</span>
                     </div>
                   )}
                 </div>
               </div>
-
-              {vulnerabilityData.summary.nearest_distance_meters !== null && (
-                <div className="analysis-section__highlight analysis-section__highlight--warning">
-                  <strong>Área mais próxima:</strong>
-                  <span className="highlight-badge highlight-badge--warning">
-                    {Math.round(vulnerabilityData.summary.nearest_distance_meters)}m
-                  </span>
-                </div>
-              )}
             </>
           ) : (
-            <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
-              Nenhuma área vulnerável encontrada nesta região
-            </p>
+            <div className="empty-state">
+              <div className="empty-state__icon">⚠️</div>
+              <p className="empty-state__text">Nenhuma área vulnerável encontrada nesta região</p>
+            </div>
           )}
         </section>
 
@@ -300,64 +305,71 @@ export function AnalysisPanel({ placesData, transportData, vulnerabilityData, cr
                     {'☆'.repeat(5 - crimeData.crime_safety_stars)}
                   </div>
                   <span className="score-badge__subtitle">
-                    {crimeData.crime_safety_stars}/5 estrelas
+                    {crimeData.crime_safety_stars}/5 estrelas (maior = mais seguro)
                   </span>
                 </div>
               </div>
 
-              <div className={`crime-risk-badge crime-risk-badge--${crimeData.indice_risco.toLowerCase().replace('í', 'i').replace('é', 'e')}`}>
-                <span className="crime-risk-badge__label">Índice de Risco</span>
-                <span className="crime-risk-badge__value">{crimeData.indice_risco}</span>
+              <div className="data-grid">
+                <div className={`data-card data-card--full data-card--risk data-card--risk-${crimeData.indice_risco.toLowerCase().replace('í', 'i').replace('é', 'e')}`}>
+                  <div className="data-card__icon">⚠️</div>
+                  <div className="data-card__content">
+                    <div className="data-card__value">{crimeData.indice_risco}</div>
+                    <div className="data-card__label">Índice de Risco</div>
+                  </div>
+                </div>
+
+                <div className="data-card data-card--info data-card--full">
+                  <div className="data-card__icon">🏛️</div>
+                  <div className="data-card__content">
+                    <div className="data-card__value">{crimeData.delegacia_responsavel}</div>
+                    <div className="data-card__label">Delegacia Responsável</div>
+                  </div>
+                </div>
               </div>
 
-              <div className="analysis-section__highlight analysis-section__highlight--info">
-                <strong>Delegacia Responsável:</strong>
-                <span className="highlight-badge highlight-badge--info">
-                  {crimeData.delegacia_responsavel}
-                </span>
-              </div>
-
-              <div className="crime-stats">
-                <h4 className="crime-stats__title">Estatísticas Criminais</h4>
-                <div className="crime-stats__grid">
-                  <div className="crime-stat-item">
-                    <span className="crime-stat-item__icon">💀</span>
-                    <div className="crime-stat-item__content">
-                      <span className="crime-stat-item__label">Letalidade Violenta</span>
-                      <span className="crime-stat-item__value">{crimeData.dados_brutos.letalidade_violenta}</span>
+              <div className="detail-section">
+                <h4 className="detail-section__title">Estatísticas Criminais</h4>
+                <div className="data-grid data-grid--compact">
+                  <div className="data-card data-card--compact">
+                    <div className="data-card__icon">💀</div>
+                    <div className="data-card__content">
+                      <div className="data-card__value">{crimeData.dados_brutos.letalidade_violenta}</div>
+                      <div className="data-card__label">Letalidade Violenta</div>
                     </div>
                   </div>
 
-                  <div className="crime-stat-item">
-                    <span className="crime-stat-item__icon">🏃</span>
-                    <div className="crime-stat-item__content">
-                      <span className="crime-stat-item__label">Roubos de Rua</span>
-                      <span className="crime-stat-item__value">{crimeData.dados_brutos.roubos_rua}</span>
+                  <div className="data-card data-card--compact">
+                    <div className="data-card__icon">🏃</div>
+                    <div className="data-card__content">
+                      <div className="data-card__value">{crimeData.dados_brutos.roubos_rua}</div>
+                      <div className="data-card__label">Roubos de Rua</div>
                     </div>
                   </div>
 
-                  <div className="crime-stat-item">
-                    <span className="crime-stat-item__icon">🚗</span>
-                    <div className="crime-stat-item__content">
-                      <span className="crime-stat-item__label">Roubos de Veículo</span>
-                      <span className="crime-stat-item__value">{crimeData.dados_brutos.roubos_veiculo}</span>
+                  <div className="data-card data-card--compact">
+                    <div className="data-card__icon">🚗</div>
+                    <div className="data-card__content">
+                      <div className="data-card__value">{crimeData.dados_brutos.roubos_veiculo}</div>
+                      <div className="data-card__label">Roubos de Veículo</div>
                     </div>
                   </div>
 
-                  <div className="crime-stat-item">
-                    <span className="crime-stat-item__icon">📊</span>
-                    <div className="crime-stat-item__content">
-                      <span className="crime-stat-item__label">Pontuação Total</span>
-                      <span className="crime-stat-item__value">{crimeData.dados_brutos.pontuacao_total}</span>
+                  <div className="data-card data-card--compact data-card--highlight">
+                    <div className="data-card__icon">📊</div>
+                    <div className="data-card__content">
+                      <div className="data-card__value">{crimeData.dados_brutos.pontuacao_total}</div>
+                      <div className="data-card__label">Pontuação Total</div>
                     </div>
                   </div>
                 </div>
               </div>
             </>
           ) : (
-            <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
-              Dados de segurança não disponíveis para esta região
-            </p>
+            <div className="empty-state">
+              <div className="empty-state__icon">🚨</div>
+              <p className="empty-state__text">Dados de segurança não disponíveis para esta região</p>
+            </div>
           )}
         </section>
       </div>
