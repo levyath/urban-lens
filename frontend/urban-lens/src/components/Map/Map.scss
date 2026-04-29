@@ -1,0 +1,52 @@
+// Estilos do componente Map
+@use '../../styles/variables.scss' as *;
+
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: $bg-secondary;
+  
+  .map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+}
+
+// Estilos para o popup dos marcadores
+.marker-popup {
+  padding: $spacing-xs;
+  
+  h3 {
+    margin: 0 0 $spacing-xs 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: $text-secondary;
+    line-height: 1.4;
+  }
+}
+
+// Customização dos popups do Leaflet
+.leaflet-popup-content-wrapper {
+  border-radius: $border-radius-md !important;
+  box-shadow: $shadow-lg !important;
+}
+
+.leaflet-popup-content {
+  margin: $spacing-sm $spacing-md !important;
+  font-family: inherit !important;
+}
+
+// Garantir que o container do Leaflet tenha altura
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}

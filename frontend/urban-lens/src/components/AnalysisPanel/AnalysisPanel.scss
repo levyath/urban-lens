@@ -1,0 +1,36 @@
+@import '../../styles/variables.scss';
+
+.analysis-panel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+
+  span {
+    font-size: 0.78rem;
+    color: #4f656b;
+  }
+
+  button {
+    border: 0;
+    border-radius: $border-radius-sm;
+    padding: 0.35rem 0.6rem;
+    cursor: pointer;
+    background: rgba(11, 114, 133, 0.14);
+    color: #0b7285;
+    font-size: 0.78rem;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
