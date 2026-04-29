@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMapEvents, useMap } from 'react-leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import { SearchBar } from './components/SearchBar/SearchBar';
-import type { GeocodeResultItem } from './types';
+import type { GeocodeResultItem, VulnerabilityArea } from './types';
+import { parseWKT, getVulnerabilityColor, getVulnerabilityOpacity } from './utils/wktParser';
 import './App.scss';
 import logoSvg from './assets/logo.svg';
 
@@ -71,7 +72,9 @@ function App() {
   const [mapCenter, setMapCenter] = useState<[number, number]>([-22.9068, -43.1729]);
   const [mapZoom, setMapZoom] = useState(13);
   const [markers, setMarkers] = useState<MarkerData[]>([]);
+  const [vulnerabilityAreas, setVulnerabilityAreas] = useState<VulnerabilityArea[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<SearchResult | null>(null);
+  const [searchRadius, setSearchRadius] = useState(2000);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const mapRef = useRef<any>(null);
@@ -99,6 +102,33 @@ function App() {
     };
     
     setMarkers([newMarker]);
+    
+    loadVulnerabilityAreas(result.lat, result.lon);
+  };
+
+  const handleRadiusChange = (newRadius: number) => {
+    setSearchRadius(newRadius);
+    if (selectedLocation) {
+      loadVulnerabilityAreas(selectedLocation.lat, selectedLocation.lon);
+    }
+  };
+
+  const loadVulnerabilityAreas = async (lat: number, lon: number) => {
+    try {
+      const response = await axios.get(`${API_URL}/vulnerability/near`, {
+        params: {
+          lat,
+          lon,
+          radius: searchRadius,
+          page: 1,
+          page_size: 50
+        }
+      });
+      
+      setVulnerabilityAreas(response.data.data || []);
+    } catch (err) {
+      console.error('Erro ao carregar áreas de vulnerabilidade:', err);
+    }
   };
 
   const searchNearbyPlaces = async () => {
@@ -153,6 +183,8 @@ function App() {
     setMarkers([clickMarker]);
     setMapCenter([lat, lon]);
     setSelectedLocation({ address: 'Ponto clicado no mapa', lat, lon });
+    
+    loadVulnerabilityAreas(lat, lon);
   };
 
   return (
@@ -169,6 +201,31 @@ function App() {
         />
         
         <div className="header__actions">
+          {selectedLocation && (
+            <div className="header__radius-control">
+              <label htmlFor="radius-slider" className="header__radius-label">
+                Raio: {searchRadius}m
+              </label>
+              <input
+                id="radius-slider"
+                type="range"
+                min="500"
+                max="5000"
+                step="100"
+                value={searchRadius}
+                onChange={(e) => handleRadiusChange(Number(e.target.value))}
+                className="header__radius-slider"
+              />
+            </div>
+          )}
+          
+          {markers.length > 0 && (
+            <div className="header__badge">
+              <span className="header__badge-icon">📍</span>
+              <span className="header__badge-count">{markers.length}</span>
+            </div>
+          )}
+          
           {selectedLocation && (
             <button
               onClick={searchNearbyPlaces}
@@ -189,18 +246,6 @@ function App() {
         </div>
       )}
 
-      <div className="info-bar">
-        <span className="info-bar__tip">
-          <span className="info-bar__icon">💡</span>
-          Digite um endereço, selecione da lista e clique em "Buscar Lugares"
-        </span>
-        {markers.length > 0 && (
-          <span className="info-bar__markers">
-            📍 {markers.length} marcador{markers.length > 1 ? 'es' : ''}
-          </span>
-        )}
-      </div>
-
       <main className="main">
         <div className="map-container">
           <MapContainer
@@ -216,6 +261,63 @@ function App() {
             />
             
             <MapController center={mapCenter} zoom={mapZoom} />
+            
+            {selectedLocation && (
+              <Circle
+                center={[selectedLocation.lat, selectedLocation.lon]}
+                radius={searchRadius}
+                pathOptions={{
+                  color: '#667eea',
+                  fillColor: '#667eea',
+                  fillOpacity: 0.05,
+                  weight: 2,
+                  dashArray: '10, 10',
+                  opacity: 0.6
+                }}
+              />
+            )}
+            
+            {vulnerabilityAreas.map((area) => {
+              const polygons = parseWKT(area.geom_wkt);
+              const color = getVulnerabilityColor(area.vulnerability_level);
+              const opacity = getVulnerabilityOpacity(area.vulnerability_level);
+              
+              return polygons.map((polygon, idx) => (
+                <Polygon
+                  key={`${area.id}-${idx}`}
+                  positions={polygon}
+                  pathOptions={{
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: opacity,
+                    weight: 2,
+                    opacity: 0.8
+                  }}
+                >
+                  <Popup>
+                    <div style={{ minWidth: '200px' }}>
+                      <strong style={{ fontSize: '14px', color: '#111' }}>
+                        {area.name}
+                      </strong>
+                      <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>
+                        {area.municipality && `${area.municipality}, `}{area.uf}
+                      </p>
+                      <p style={{ margin: '5px 0', fontSize: '12px' }}>
+                        <strong>Nível:</strong> {area.vulnerability_level}
+                      </p>
+                      <p style={{ margin: '5px 0', fontSize: '12px' }}>
+                        <strong>Distância:</strong> {Math.round(area.distance_meters)}m
+                      </p>
+                      {area.pop_sabren && (
+                        <p style={{ margin: '5px 0', fontSize: '12px' }}>
+                          <strong>População:</strong> {area.pop_sabren}
+                        </p>
+                      )}
+                    </div>
+                  </Popup>
+                </Polygon>
+              ));
+            })}
             
             {markers.map((marker) => (
               <Marker key={marker.id} position={[marker.lat, marker.lon]}>
