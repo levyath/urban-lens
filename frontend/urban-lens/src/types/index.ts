@@ -43,6 +43,10 @@ export interface PlacesNearbyResponse {
     page: number;
     page_size: number;
     total_pages: number;
+    counts_by_type?: Array<{ type: string; count: number }>;
+    top_types?: Array<{ type: string; count: number }>;
+    rating_score?: number;
+    rating_stars?: number;
   };
   data: Place[];
 }
@@ -66,20 +70,15 @@ export interface TransportResponse {
     page: number;
     page_size: number;
     total_pages: number;
+    counts_by_type: {
+      bus_stops: number;
+      train_stations: number;
+      subway_entrances: number;
+    };
+    top_types: Array<{ type: string; count: number }>;
+    rating_score: number;
+    rating_stars: number;
   };
-  counts: {
-    bus_stops: number;
-    train_stations: number;
-    subway_entrances: number;
-  };
-  raw_score: number;
-  transport_score: number;
-  nearest_transport: {
-    type: string;
-    distance_meters: number;
-    walk_time_minutes: number;
-    name: string;
-  } | null;
   data: {
     bus_stops: TransportPoint[];
     train_stations: TransportPoint[];
@@ -142,10 +141,9 @@ export interface VulnerabilityNearbyResponse {
     low_count: number;
     inside_count: number;
     nearest_distance_meters: number | null;
-    dominant_vulnerability_level: 'LOW' | 'MEDIUM' | 'HIGH' | null;
     vulnerability_score: number;
+    vulnerability_stars: number;
   };
-  nearest_vulnerability_area: VulnerabilityArea | null;
   data: VulnerabilityArea[];
 }
 
@@ -174,4 +172,18 @@ export interface VulnerabilitySearchOptions {
   codAp?: number;
   situacao?: number;
   complexo?: string;
+}
+
+export interface CrimeStatisticResponse {
+  sucesso: boolean;
+  delegacia_responsavel: string;
+  indice_risco: 'BAIXO' | 'MÉDIO' | 'ALTO' | 'MUITO ALTO';
+  crime_safety_stars: number;
+  crime_safety_score: number;
+  dados_brutos: {
+    pontuacao_total: number;
+    letalidade_violenta: number;
+    roubos_rua: number;
+    roubos_veiculo: number;
+  };
 }

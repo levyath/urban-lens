@@ -1,224 +1,366 @@
-import type { AnalysisPanelProps } from '../../types/components';
-import type { VulnerabilitySortBy, SortOrder } from '../../types';
+import type { PlacesNearbyResponse, TransportResponse, VulnerabilityNearbyResponse, CrimeStatisticResponse } from '../../types';
 import './AnalysisPanel.scss';
+import { useState } from 'react';
 
-const vulnerabilitySortOptions: VulnerabilitySortBy[] = [
-  'relevance',
-  'distance_meters',
-  'vulnerability_level',
-  'pop_sabren',
-  'bairro',
-];
+interface AnalysisPanelProps {
+  placesData: PlacesNearbyResponse | null;
+  transportData: TransportResponse | null;
+  vulnerabilityData: VulnerabilityNearbyResponse | null;
+  crimeData: CrimeStatisticResponse | null;
+  loading: boolean;
+}
 
-const canGoBack = (page: number) => page > 1;
-const canGoForward = (page: number, totalPages?: number) =>
-  Boolean(totalPages && page < totalPages);
+export function AnalysisPanel({ placesData, transportData, vulnerabilityData, crimeData, loading }: AnalysisPanelProps) {
+  const [isMinimized, setIsMinimized] = useState(false);
 
-const Pagination = ({
-  page,
-  totalPages,
-  onChange,
-}: {
-  page: number;
-  totalPages?: number;
-  onChange: (nextPage: number) => void;
-}) => (
-  <div className="pagination-row">
-    <button type="button" onClick={() => onChange(page - 1)} disabled={!canGoBack(page)}>
-      Anterior
-    </button>
-    <span>
-      Pagina {page} de {totalPages ?? 1}
-    </span>
-    <button
-      type="button"
-      onClick={() => onChange(page + 1)}
-      disabled={!canGoForward(page, totalPages)}
-    >
-      Proxima
-    </button>
-  </div>
-);
+  if (isMinimized) {
+    return (
+      <div className="analysis-panel analysis-panel--minimized">
+        <div className="analysis-panel__header">
+          <h2 className="analysis-panel__title">📊 Análise</h2>
+          <button 
+            className="analysis-panel__action-btn" 
+            onClick={() => setIsMinimized(false)}
+            title="Maximizar"
+          >
+            ▲
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-export const AnalysisPanel = ({
-  selectedPointLabel,
-  searchAddressLabel,
-  hasSelectedPoint,
-  analysisStatus,
-  error,
-  analysisError,
-  filters,
-  pagination,
-  places,
-  transports,
-  vulnerabilityLevel,
-  vulnerabilityNearby,
-  onRadiusChange,
-  onSelectedTypeChange,
-  onVulnerabilitySortByChange,
-  onVulnerabilitySortOrderChange,
-  onVulnerabilityBairroChange,
-  onPageSizeChange,
-  onApplyFilters,
-  onReset,
-  onPlacesPageChange,
-  onTransportsPageChange,
-  onVulnerabilityPageChange,
-}: AnalysisPanelProps) => {
-  const vulnerabilityTone = vulnerabilityLevel?.vulnerability_level ?? 'LOW';
+  if (loading) {
+    return (
+      <div className="analysis-panel">
+        <div className="analysis-panel__header">
+          <h2 className="analysis-panel__title">Carregando Análise...</h2>
+          <button 
+            className="analysis-panel__action-btn" 
+            onClick={() => setIsMinimized(true)}
+            title="Minimizar"
+          >
+            ▼
+          </button>
+        </div>
+        <div className="analysis-panel__loading">
+          <div className="analysis-panel__spinner"></div>
+          <p>Buscando dados de lugares, transportes, vulnerabilidade e segurança...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const placesByType = placesData?.data?.reduce((acc, place) => {
+    if (!acc[place.type]) {
+      acc[place.type] = [];
+    }
+    acc[place.type].push(place);
+    return acc;
+  }, {} as Record<string, typeof placesData.data>) || {};
 
   return (
-    <aside className="analysis-panel">
-      <section className="panel-card">
-        <h2>Ponto ativo</h2>
-        <p>{searchAddressLabel || selectedPointLabel}</p>
-        <div className="panel-grid">
-          <label>
-            Raio (m)
-            <input
-              type="number"
-              min={100}
-              max={5000}
-              step={100}
-              value={filters.radius}
-              onChange={(event) => onRadiusChange(Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Tipo de lugar
-            <input
-              type="text"
-              value={filters.selectedType}
-              placeholder="Ex: school,hospital"
-              onChange={(event) => onSelectedTypeChange(event.target.value)}
-            />
-          </label>
-          <label>
-            Ordenar vulnerabilidade
-            <select
-              value={filters.vulnerabilitySortBy}
-              onChange={(event) =>
-                onVulnerabilitySortByChange(event.target.value as VulnerabilitySortBy)
-              }
-            >
-              {vulnerabilitySortOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Ordem
-            <select
-              value={filters.vulnerabilitySortOrder}
-              onChange={(event) => onVulnerabilitySortOrderChange(event.target.value as SortOrder)}
-            >
-              <option value="asc">asc</option>
-              <option value="desc">desc</option>
-            </select>
-          </label>
-          <label>
-            Filtro bairro
-            <input
-              type="text"
-              value={filters.vulnerabilityBairro}
-              placeholder="Ex: Rocinha"
-              onChange={(event) => onVulnerabilityBairroChange(event.target.value)}
-            />
-          </label>
-          <label>
-            Itens por pagina
-            <input
-              type="number"
-              min={5}
-              max={100}
-              step={5}
-              value={pagination.pageSize}
-              onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            />
-          </label>
-        </div>
-        <div className="panel-actions">
-          <button
-            type="button"
-            onClick={onApplyFilters}
-            disabled={!hasSelectedPoint || analysisStatus === 'loading'}
-          >
-            Atualizar analise
-          </button>
-          <button type="button" className="ghost" onClick={onReset}>
-            Limpar
-          </button>
-        </div>
-      </section>
+    <div className="analysis-panel">
+      <div className="analysis-panel__header">
+        <h2 className="analysis-panel__title">📊 Análise da Região</h2>
+        <button 
+          className="analysis-panel__action-btn" 
+          onClick={() => setIsMinimized(true)}
+          title="Minimizar"
+        >
+          ▼
+        </button>
+      </div>
 
-      {error && <p className="app__error">{error}</p>}
-      {analysisError && <p className="app__error">{analysisError}</p>}
+      <div className="analysis-panel__content">
+        <section className="analysis-section">
+          <h3 className="analysis-section__title">🚇 Transportes</h3>
+          
+          {transportData ? (
+            <>
+              <div className="analysis-section__summary">
+                <div className="stat-card">
+                  <div className="stat-card__icon">🚌</div>
+                  <div className="stat-card__content">
+                    <div className="stat-card__label">Pontos de Ônibus</div>
+                    <div className="stat-card__value">{transportData.summary.counts_by_type.bus_stops}</div>
+                  </div>
+                </div>
+                
+                <div className="stat-card">
+                  <div className="stat-card__icon">🚆</div>
+                  <div className="stat-card__content">
+                    <div className="stat-card__label">Estações de Trem</div>
+                    <div className="stat-card__value">{transportData.summary.counts_by_type.train_stations}</div>
+                  </div>
+                </div>
+                
+                <div className="stat-card">
+                  <div className="stat-card__icon">🚇</div>
+                  <div className="stat-card__content">
+                    <div className="stat-card__label">Entradas de Metrô</div>
+                    <div className="stat-card__value">{transportData.summary.counts_by_type.subway_entrances}</div>
+                  </div>
+                </div>
+              </div>
 
-      {analysisStatus === 'loading' && (
-        <section className="panel-card">
-          <h2>Carregando</h2>
-          <p>Consultando lugares, transporte e vulnerabilidade...</p>
+              <div className="analysis-section__score">
+                <div className="score-badge">
+                  <span className="score-badge__label">Avaliação de Transporte</span>
+                  <div className="score-badge__stars">
+                    {'⭐'.repeat(transportData.summary.rating_stars)}
+                    {'☆'.repeat(5 - transportData.summary.rating_stars)}
+                  </div>
+                  <span className="score-badge__subtitle">
+                    {transportData.summary.rating_stars}/5 estrelas
+                  </span>
+                </div>
+              </div>
+
+              {transportData.summary.top_types && transportData.summary.top_types.length > 0 && (
+                <div className="analysis-section__highlight">
+                  <strong>Mais comum:</strong> 
+                  <span className="highlight-badge">
+                    {transportData.summary.top_types[0].type === 'bus_stop' ? '🚌 Ônibus' : 
+                     transportData.summary.top_types[0].type === 'train_station' ? '🚆 Trem' : '🚇 Metrô'}
+                    {' '}({transportData.summary.top_types[0].count})
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
+              Nenhum dado de transporte disponível
+            </p>
+          )}
         </section>
-      )}
 
-      {analysisStatus === 'ready' && (
-        <>
-          <section className="panel-card">
-            <h2>Vulnerabilidade</h2>
-            <p className={`badge badge--${vulnerabilityTone.toLowerCase()}`}>
-              Nivel {vulnerabilityLevel?.vulnerability_level}
-            </p>
-            <p>
-              Areas proximas: {vulnerabilityNearby?.summary.returned_count ?? 0} de{' '}
-              {vulnerabilityNearby?.summary.total ?? 0}
-            </p>
-            <p>
-              Populacao estimada (SABREN): {vulnerabilityNearby?.summary.total_population_sabren ?? 0}
-            </p>
-            <Pagination
-              page={pagination.vulnerabilityPage}
-              totalPages={vulnerabilityNearby?.summary.total_pages}
-              onChange={onVulnerabilityPageChange}
-            />
-          </section>
+        <section className="analysis-section">
+          <h3 className="analysis-section__title">📍 Lugares Próximos</h3>
+          
+          {placesData && placesData.data && placesData.data.length > 0 ? (
+            <>
+              <div className="analysis-section__score">
+                <div className="score-badge score-badge--secondary">
+                  <span className="score-badge__label">Avaliação de Lugares</span>
+                  <div className="score-badge__stars">
+                    {'⭐'.repeat(placesData.summary?.rating_stars || 0)}
+                    {'☆'.repeat(5 - (placesData.summary?.rating_stars || 0))}
+                  </div>
+                  <span className="score-badge__subtitle">
+                    {placesData.summary?.rating_stars || 0}/5 estrelas
+                  </span>
+                </div>
+              </div>
 
-          <section className="panel-card">
-            <h2>Transporte</h2>
-            <p>Score: {((transports?.transport_score ?? 0) * 100).toFixed(0)} / 100</p>
-            <p>Ponto mais proximo: {transports?.nearest_transport?.name ?? 'Nao encontrado'}</p>
-            <p>Distancia: {transports?.nearest_transport?.distance_meters ?? '-'} m</p>
-            <p>
-              Onibus: {transports?.counts.bus_stops ?? 0} | Trem: {transports?.counts.train_stations ?? 0}{' '}
-              | Metro: {transports?.counts.subway_entrances ?? 0}
-            </p>
-            <Pagination
-              page={pagination.transportsPage}
-              totalPages={transports?.summary.total_pages}
-              onChange={onTransportsPageChange}
-            />
-          </section>
+              <div className="analysis-section__summary">
+                <div className="stat-card stat-card--full">
+                  <div className="stat-card__icon">🏪</div>
+                  <div className="stat-card__content">
+                    <div className="stat-card__label">Total de Lugares</div>
+                    <div className="stat-card__value">{placesData.summary?.total || 0}</div>
+                  </div>
+                </div>
+              </div>
 
-          <section className="panel-card panel-card--scroll">
-            <h2>Lugares ({places?.summary.returned_count ?? 0})</h2>
-            <ul className="places-list">
-              {(places?.data ?? []).slice(0, 12).map((place, index) => (
-                <li key={`${place.name}-${index}`}>
-                  <strong>{place.name}</strong>
-                  <span>{place.type}</span>
-                  <span>{Math.round(place.distance)} m</span>
-                </li>
-              ))}
-            </ul>
-            <Pagination
-              page={pagination.placesPage}
-              totalPages={places?.summary.total_pages}
-              onChange={onPlacesPageChange}
-            />
-          </section>
-        </>
-      )}
-    </aside>
+              {placesData.summary?.top_types && placesData.summary.top_types.length > 0 && (
+                <div className="top-categories">
+                  <h4 className="top-categories__title">Categorias Principais</h4>
+                  <div className="top-categories__list">
+                    {placesData.summary.top_types.slice(0, 3).map((item: { type: string; count: number }, idx: number) => (
+                      <div key={idx} className="category-badge">
+                        <span className="category-badge__name">{item.type}</span>
+                        <span className="category-badge__count">{item.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="places-list">
+                {Object.entries(placesByType).slice(0, 3).map(([type, places]) => (
+                  <div key={type} className="place-group">
+                    <h4 className="place-group__title">
+                      {type} <span className="place-group__count">({places.length})</span>
+                    </h4>
+                    <ul className="place-group__list">
+                      {places.slice(0, 3).map((place, idx) => (
+                        <li key={idx} className="place-item">
+                          <span className="place-item__name">{place.name}</span>
+                          <span className="place-item__distance">
+                            {Math.round(place.distance)}m
+                          </span>
+                        </li>
+                      ))}
+                      {places.length > 3 && (
+                        <li className="place-item place-item--more">
+                          +{places.length - 3} mais
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
+              Nenhum lugar encontrado nesta região
+            </p>
+          )}
+        </section>
+
+        <section className="analysis-section">
+          <h3 className="analysis-section__title">⚠️ Vulnerabilidade Social</h3>
+          
+          {vulnerabilityData && vulnerabilityData.summary.total > 0 ? (
+            <>
+              <div className="analysis-section__score">
+                <div className="score-badge score-badge--warning">
+                  <span className="score-badge__label">Nível de Vulnerabilidade</span>
+                  <div className="score-badge__stars">
+                    {'⭐'.repeat(vulnerabilityData.summary.vulnerability_stars)}
+                    {'☆'.repeat(5 - vulnerabilityData.summary.vulnerability_stars)}
+                  </div>
+                  <span className="score-badge__subtitle">
+                    {vulnerabilityData.summary.vulnerability_stars}/5 estrelas
+                  </span>
+                </div>
+              </div>
+
+              <div className="analysis-section__summary">
+                <div className="stat-card stat-card--danger">
+                  <div className="stat-card__icon">🏘️</div>
+                  <div className="stat-card__content">
+                    <div className="stat-card__label">Áreas Vulneráveis</div>
+                    <div className="stat-card__value">{vulnerabilityData.summary.total}</div>
+                  </div>
+                </div>
+
+                <div className="stat-card stat-card--danger">
+                  <div className="stat-card__icon">👥</div>
+                  <div className="stat-card__content">
+                    <div className="stat-card__label">População</div>
+                    <div className="stat-card__value">
+                      {vulnerabilityData.summary.total_population_sabren.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="vulnerability-breakdown">
+                <h4 className="vulnerability-breakdown__title">Distribuição por Proximidade</h4>
+                <div className="vulnerability-breakdown__items">
+                  {vulnerabilityData.summary.high_count > 0 && (
+                    <div className="vulnerability-item vulnerability-item--high">
+                      <span className="vulnerability-item__label">Muito Próximo (&lt;300m)</span>
+                      <span className="vulnerability-item__count">{vulnerabilityData.summary.high_count}</span>
+                    </div>
+                  )}
+                  {vulnerabilityData.summary.medium_count > 0 && (
+                    <div className="vulnerability-item vulnerability-item--medium">
+                      <span className="vulnerability-item__label">Próximo (300-800m)</span>
+                      <span className="vulnerability-item__count">{vulnerabilityData.summary.medium_count}</span>
+                    </div>
+                  )}
+                  {vulnerabilityData.summary.low_count > 0 && (
+                    <div className="vulnerability-item vulnerability-item--low">
+                      <span className="vulnerability-item__label">Distante (&gt;800m)</span>
+                      <span className="vulnerability-item__count">{vulnerabilityData.summary.low_count}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {vulnerabilityData.summary.nearest_distance_meters !== null && (
+                <div className="analysis-section__highlight analysis-section__highlight--warning">
+                  <strong>Área mais próxima:</strong>
+                  <span className="highlight-badge highlight-badge--warning">
+                    {Math.round(vulnerabilityData.summary.nearest_distance_meters)}m
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
+              Nenhuma área vulnerável encontrada nesta região
+            </p>
+          )}
+        </section>
+
+        <section className="analysis-section">
+          <h3 className="analysis-section__title">🚨 Segurança e Criminalidade</h3>
+          
+          {crimeData && crimeData.sucesso ? (
+            <>
+              <div className="analysis-section__score">
+                <div className="score-badge score-badge--safety">
+                  <span className="score-badge__label">Índice de Segurança</span>
+                  <div className="score-badge__stars">
+                    {'⭐'.repeat(crimeData.crime_safety_stars)}
+                    {'☆'.repeat(5 - crimeData.crime_safety_stars)}
+                  </div>
+                  <span className="score-badge__subtitle">
+                    {crimeData.crime_safety_stars}/5 estrelas
+                  </span>
+                </div>
+              </div>
+
+              <div className={`crime-risk-badge crime-risk-badge--${crimeData.indice_risco.toLowerCase().replace('í', 'i').replace('é', 'e')}`}>
+                <span className="crime-risk-badge__label">Índice de Risco</span>
+                <span className="crime-risk-badge__value">{crimeData.indice_risco}</span>
+              </div>
+
+              <div className="analysis-section__highlight analysis-section__highlight--info">
+                <strong>Delegacia Responsável:</strong>
+                <span className="highlight-badge highlight-badge--info">
+                  {crimeData.delegacia_responsavel}
+                </span>
+              </div>
+
+              <div className="crime-stats">
+                <h4 className="crime-stats__title">Estatísticas Criminais</h4>
+                <div className="crime-stats__grid">
+                  <div className="crime-stat-item">
+                    <span className="crime-stat-item__icon">💀</span>
+                    <div className="crime-stat-item__content">
+                      <span className="crime-stat-item__label">Letalidade Violenta</span>
+                      <span className="crime-stat-item__value">{crimeData.dados_brutos.letalidade_violenta}</span>
+                    </div>
+                  </div>
+
+                  <div className="crime-stat-item">
+                    <span className="crime-stat-item__icon">🏃</span>
+                    <div className="crime-stat-item__content">
+                      <span className="crime-stat-item__label">Roubos de Rua</span>
+                      <span className="crime-stat-item__value">{crimeData.dados_brutos.roubos_rua}</span>
+                    </div>
+                  </div>
+
+                  <div className="crime-stat-item">
+                    <span className="crime-stat-item__icon">🚗</span>
+                    <div className="crime-stat-item__content">
+                      <span className="crime-stat-item__label">Roubos de Veículo</span>
+                      <span className="crime-stat-item__value">{crimeData.dados_brutos.roubos_veiculo}</span>
+                    </div>
+                  </div>
+
+                  <div className="crime-stat-item">
+                    <span className="crime-stat-item__icon">📊</span>
+                    <div className="crime-stat-item__content">
+                      <span className="crime-stat-item__label">Pontuação Total</span>
+                      <span className="crime-stat-item__value">{crimeData.dados_brutos.pontuacao_total}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
+              Dados de segurança não disponíveis para esta região
+            </p>
+          )}
+        </section>
+      </div>
+    </div>
   );
-};
+}

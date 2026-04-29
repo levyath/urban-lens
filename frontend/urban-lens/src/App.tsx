@@ -3,7 +3,8 @@ import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMapEvents, 
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import { SearchBar } from './components/SearchBar/SearchBar';
-import type { GeocodeResultItem, VulnerabilityArea } from './types';
+import { AnalysisPanel } from './components/AnalysisPanel/AnalysisPanel';
+import type { GeocodeResultItem, VulnerabilityArea, PlacesNearbyResponse, TransportResponse, VulnerabilityNearbyResponse, CrimeStatisticResponse } from './types';
 import { parseWKT, getVulnerabilityColor, getVulnerabilityOpacity } from './utils/wktParser';
 import './App.scss';
 import logoSvg from './assets/logo.svg';
@@ -22,14 +23,6 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const API_URL = 'http://localhost:3000';
-
-interface Place {
-  name: string;
-  type: string;
-  lat: number;
-  lon: number;
-  distance: number;
-}
 
 interface MarkerData {
   id: string;
@@ -75,8 +68,13 @@ function App() {
   const [vulnerabilityAreas, setVulnerabilityAreas] = useState<VulnerabilityArea[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<SearchResult | null>(null);
   const [searchRadius, setSearchRadius] = useState(2000);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
+  const [placesData, setPlacesData] = useState<PlacesNearbyResponse | null>(null);
+  const [transportData, setTransportData] = useState<TransportResponse | null>(null);
+  const [vulnerabilityData, setVulnerabilityData] = useState<VulnerabilityNearbyResponse | null>(null);
+  const [crimeData, setCrimeData] = useState<CrimeStatisticResponse | null>(null);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const mapRef = useRef<any>(null);
 
   const handleSelectAddress = (result: GeocodeResultItem) => {
@@ -104,12 +102,67 @@ function App() {
     setMarkers([newMarker]);
     
     loadVulnerabilityAreas(result.lat, result.lon);
+    loadAnalysisData(result.lat, result.lon);
+  };
+
+  const loadAnalysisData = async (lat: number, lon: number) => {
+    setLoadingAnalysis(true);
+    setShowAnalysisPanel(true);
+    
+    try {
+      const [placesResponse, transportResponse, vulnerabilityResponse, crimeResponse] = await Promise.all([
+        axios.get(`${API_URL}/places/near`, {
+          params: { 
+            lat, 
+            lon, 
+            radius: searchRadius,
+            page: 1,
+            page_size: 50
+          }
+        }),
+        axios.get(`${API_URL}/transports/near`, {
+          params: { 
+            lat, 
+            lon, 
+            radius: searchRadius,
+            page: 1,
+            page_size: 50
+          }
+        }),
+        axios.get(`${API_URL}/vulnerability/near`, {
+          params: { 
+            lat, 
+            lon, 
+            radius: searchRadius,
+            page: 1,
+            page_size: 20
+          }
+        }),
+        axios.get(`${API_URL}/cisp-statistic/local`, {
+          params: { 
+            lat: lat.toString(), 
+            lon: lon.toString()
+          }
+        }).catch(() => ({ data: null }))
+      ]);
+      
+      setPlacesData(placesResponse.data);
+      setTransportData(transportResponse.data);
+      setVulnerabilityData(vulnerabilityResponse.data);
+      setCrimeData(crimeResponse.data);
+    } catch (err) {
+      console.error('Erro ao carregar dados de análise:', err);
+      setError('Erro ao carregar dados de análise');
+    } finally {
+      setLoadingAnalysis(false);
+    }
   };
 
   const handleRadiusChange = (newRadius: number) => {
     setSearchRadius(newRadius);
     if (selectedLocation) {
       loadVulnerabilityAreas(selectedLocation.lat, selectedLocation.lon);
+      loadAnalysisData(selectedLocation.lat, selectedLocation.lon);
     }
   };
 
@@ -131,45 +184,6 @@ function App() {
     }
   };
 
-  const searchNearbyPlaces = async () => {
-    if (!selectedLocation) return;
-    
-    setLoading(true);
-    try {
-      const { lat, lon } = selectedLocation;
-      
-      const response = await axios.get(`${API_URL}/places/near`, {
-        params: { 
-          lat, 
-          lon, 
-          radius: 1000,
-          page: 1,
-          page_size: 30
-        }
-      });
-      
-      const places: Place[] = response.data.data || [];
-      
-      const selectedMarker = markers[0];
-      const placeMarkers: MarkerData[] = places.map((place, index) => ({
-        id: `place-${index}`,
-        lat: place.lat,
-        lon: place.lon,
-        title: place.name,
-        description: `${place.type} - ${Math.round(place.distance)}m`,
-        color: 'green'
-      }));
-      
-      setMarkers([selectedMarker, ...placeMarkers]);
-      
-    } catch (err) {
-      setError('Erro ao buscar lugares próximos');
-      console.error('Erro ao buscar lugares:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleMapClick = (lat: number, lon: number) => {
     const clickMarker: MarkerData = {
       id: `click-${Date.now()}`,
@@ -185,6 +199,7 @@ function App() {
     setSelectedLocation({ address: 'Ponto clicado no mapa', lat, lon });
     
     loadVulnerabilityAreas(lat, lon);
+    loadAnalysisData(lat, lon);
   };
 
   return (
@@ -199,18 +214,6 @@ function App() {
           onSelectAddress={handleSelectAddress}
           placeholder="Digite um endereço (ex: Copacabana, Rio de Janeiro)..."
         />
-        
-        <div className="header__actions">
-          {selectedLocation && (
-            <button
-              onClick={searchNearbyPlaces}
-              disabled={loading}
-              className={`header__button ${!loading ? 'header__button--success' : ''}`}
-            >
-              {loading ? '⏳ Buscando...' : '🔍 Buscar Lugares'}
-            </button>
-          )}
-        </div>
       </header>
 
       <div className="spacer"></div>
@@ -312,6 +315,16 @@ function App() {
             <MapClickHandler onClick={handleMapClick} />
           </MapContainer>
 
+          {showAnalysisPanel && (
+            <AnalysisPanel
+              placesData={placesData}
+              transportData={transportData}
+              vulnerabilityData={vulnerabilityData}
+              crimeData={crimeData}
+              loading={loadingAnalysis}
+            />
+          )}
+
           {selectedLocation && (
             <div className="map-controls">
               <div className="map-controls__panel">
@@ -331,12 +344,22 @@ function App() {
                 </div>
               </div>
 
-              {markers.length > 0 && (
-                <div className="map-controls__badge">
-                  <div className="map-controls__badge-icon">📍</div>
+              {placesData && placesData.summary.total > 0 && (
+                <div className="map-controls__badge map-controls__badge--places">
+                  <div className="map-controls__badge-icon">🏪</div>
                   <div className="map-controls__badge-content">
-                    <div className="map-controls__badge-label">Marcadores</div>
-                    <div className="map-controls__badge-count">{markers.length}</div>
+                    <div className="map-controls__badge-label">Lugares</div>
+                    <div className="map-controls__badge-count">{placesData.summary.total}</div>
+                  </div>
+                </div>
+              )}
+
+              {transportData && transportData.summary.total > 0 && (
+                <div className="map-controls__badge map-controls__badge--transport">
+                  <div className="map-controls__badge-icon">🚇</div>
+                  <div className="map-controls__badge-content">
+                    <div className="map-controls__badge-label">Transportes</div>
+                    <div className="map-controls__badge-count">{transportData.summary.total}</div>
                   </div>
                 </div>
               )}
