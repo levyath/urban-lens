@@ -14,13 +14,6 @@ interface TransportPointWithTime extends TransportPoint {
   walk_time_minutes: number;
 }
 
-interface NearestTransport {
-  type: string;
-  distance_meters: number;
-  walk_time_minutes: number;
-  name: string;
-}
-
 export interface NearbyTransportsResult {
   summary: {
     radius_meters: number;
@@ -29,15 +22,15 @@ export interface NearbyTransportsResult {
     page: number;
     page_size: number;
     total_pages: number;
+    counts_by_type: {
+      bus_stops: number;
+      train_stations: number;
+      subway_entrances: number;
+    };
+    top_types: Array<{ type: string; count: number }>;
+    rating_score: number;
+    rating_stars: number;
   };
-  counts: {
-    bus_stops: number;
-    train_stations: number;
-    subway_entrances: number;
-  };
-  raw_score: number;
-  transport_score: number;
-  nearest_transport: NearestTransport | null;
   data: {
     bus_stops: TransportPointWithTime[];
     train_stations: TransportPointWithTime[];
@@ -217,12 +210,21 @@ export class TransportsService {
       }),
     );
 
-    const nearestQuery = `
+    const busStops = transportsWithTime.filter((t) => t.type === 'bus_stop');
+    const trainStations = transportsWithTime.filter(
+      (t) => t.type === 'train_station',
+    );
+    const subwayEntrances = transportsWithTime.filter(
+      (t) => t.type === 'subway_entrance',
+    );
+
+    const busStopsCount = aggregate?.bus_stops ?? 0;
+    const subwayCount = aggregate?.subway_entrances ?? 0;
+    const trainCount = aggregate?.train_stations ?? 0;
+
+    const weightedQuery = `
       WITH transports AS (
         SELECT
-          name,
-          ST_Y(ST_Transform(way,4326)) AS lat,
-          ST_X(ST_Transform(way,4326)) AS lon,
           'bus_stop' AS type,
           ST_Distance(
             ST_Transform(way,4326)::geography,
@@ -239,9 +241,6 @@ export class TransportsService {
         UNION ALL
 
         SELECT
-          name,
-          ST_Y(ST_Transform(way,4326)) AS lat,
-          ST_X(ST_Transform(way,4326)) AS lon,
           'train_station' AS type,
           ST_Distance(
             ST_Transform(way,4326)::geography,
@@ -258,9 +257,6 @@ export class TransportsService {
         UNION ALL
 
         SELECT
-          name,
-          ST_Y(ST_Transform(way,4326)) AS lat,
-          ST_X(ST_Transform(way,4326)) AS lon,
           'subway_entrance' AS type,
           ST_Distance(
             ST_Transform(way,4326)::geography,
@@ -274,42 +270,46 @@ export class TransportsService {
           $3
         )
       )
-      SELECT *
+      SELECT
+        COALESCE(SUM(
+          CASE type
+            WHEN 'bus_stop' THEN 1
+            WHEN 'train_station' THEN 2
+            WHEN 'subway_entrance' THEN 3
+            ELSE 0
+          END
+          * (1.0 / ((distance / 100.0) + 1.0))
+        ), 0) AS weighted_score
       FROM transports
-      ORDER BY distance
-      LIMIT 1
     `;
 
-    const [nearestTransportRow] = await this.dataSource.query<TransportPoint[]>(
-      nearestQuery,
-      [lon, lat, safeRadius],
-    );
+    const [weightedScoreRow] = await this.dataSource.query<
+      Array<{ weighted_score: number }>
+    >(weightedQuery, [lon, lat, safeRadius]);
 
-    const busStops = transportsWithTime.filter((t) => t.type === 'bus_stop');
-    const trainStations = transportsWithTime.filter(
-      (t) => t.type === 'train_station',
-    );
-    const subwayEntrances = transportsWithTime.filter(
-      (t) => t.type === 'subway_entrance',
-    );
+    const ratingScore = Number(weightedScoreRow?.weighted_score ?? 0);
 
-    const busStopsCount = aggregate?.bus_stops ?? 0;
-    const subwayCount = aggregate?.subway_entrances ?? 0;
-    const trainCount = aggregate?.train_stations ?? 0;
+    const ratingStars =
+      ratingScore >= 25
+        ? 5
+        : ratingScore >= 15
+          ? 4
+          : ratingScore >= 8
+            ? 3
+            : ratingScore >= 4
+              ? 2
+              : ratingScore >= 1
+                ? 1
+                : 0;
 
-    const rawScore = busStopsCount * 1 + subwayCount * 3 + trainCount * 2;
-
-    const maxScore = 20;
-    const transportScore = Math.min(rawScore / maxScore, 1);
-
-    const nearestTransport = nearestTransportRow
-      ? {
-          ...nearestTransportRow,
-          walk_time_minutes: Math.round(
-            nearestTransportRow.distance / walkSpeed,
-          ),
-        }
-      : null;
+    const topTypes = [
+      { type: 'bus_stop', count: busStopsCount },
+      { type: 'train_station', count: trainCount },
+      { type: 'subway_entrance', count: subwayCount },
+    ]
+      .filter((item) => item.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
 
     return {
       summary: {
@@ -319,25 +319,15 @@ export class TransportsService {
         page: effectivePage,
         page_size: safePageSize,
         total_pages: totalPages,
+        counts_by_type: {
+          bus_stops: busStopsCount,
+          train_stations: trainCount,
+          subway_entrances: subwayCount,
+        },
+        top_types: topTypes,
+        rating_score: Number(ratingScore.toFixed(4)),
+        rating_stars: ratingStars,
       },
-      counts: {
-        bus_stops: busStopsCount,
-        train_stations: trainCount,
-        subway_entrances: subwayCount,
-      },
-
-      raw_score: rawScore,
-      transport_score: transportScore,
-
-      nearest_transport: nearestTransport
-        ? {
-            type: nearestTransport.type,
-            distance_meters: Math.round(nearestTransport.distance),
-            walk_time_minutes: nearestTransport.walk_time_minutes,
-            name: nearestTransport.name,
-          }
-        : null,
-
       data: {
         bus_stops: busStops,
         train_stations: trainStations,
