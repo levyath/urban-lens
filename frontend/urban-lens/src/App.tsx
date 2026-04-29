@@ -202,31 +202,6 @@ function App() {
         
         <div className="header__actions">
           {selectedLocation && (
-            <div className="header__radius-control">
-              <label htmlFor="radius-slider" className="header__radius-label">
-                Raio: {searchRadius}m
-              </label>
-              <input
-                id="radius-slider"
-                type="range"
-                min="500"
-                max="5000"
-                step="100"
-                value={searchRadius}
-                onChange={(e) => handleRadiusChange(Number(e.target.value))}
-                className="header__radius-slider"
-              />
-            </div>
-          )}
-          
-          {markers.length > 0 && (
-            <div className="header__badge">
-              <span className="header__badge-icon">📍</span>
-              <span className="header__badge-count">{markers.length}</span>
-            </div>
-          )}
-          
-          {selectedLocation && (
             <button
               onClick={searchNearbyPlaces}
               disabled={loading}
@@ -336,6 +311,47 @@ function App() {
             
             <MapClickHandler onClick={handleMapClick} />
           </MapContainer>
+
+          {selectedLocation && (
+            <div className="map-controls">
+              <div className="map-controls__panel">
+                <div className="map-controls__icon">📏</div>
+                <div className="map-controls__content">
+                  <label className="map-controls__label">Raio de Busca</label>
+                  <div className="map-controls__value">{searchRadius}m</div>
+                  <input
+                    type="range"
+                    min="500"
+                    max="5000"
+                    step="100"
+                    value={searchRadius}
+                    onChange={(e) => handleRadiusChange(Number(e.target.value))}
+                    className="map-controls__slider"
+                  />
+                </div>
+              </div>
+
+              {markers.length > 0 && (
+                <div className="map-controls__badge">
+                  <div className="map-controls__badge-icon">📍</div>
+                  <div className="map-controls__badge-content">
+                    <div className="map-controls__badge-label">Marcadores</div>
+                    <div className="map-controls__badge-count">{markers.length}</div>
+                  </div>
+                </div>
+              )}
+
+              {vulnerabilityAreas.length > 0 && (
+                <div className="map-controls__badge map-controls__badge--vulnerability">
+                  <div className="map-controls__badge-icon">⚠️</div>
+                  <div className="map-controls__badge-content">
+                    <div className="map-controls__badge-label">Áreas Vulneráveis</div>
+                    <div className="map-controls__badge-count">{vulnerabilityAreas.length}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
     </div>
