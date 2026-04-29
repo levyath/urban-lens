@@ -14,6 +14,10 @@ export interface PlacesNearbyResult {
   summary: {
     radius_meters: number;
     type_filter: string | null;
+    counts_by_type?: Array<{ type: string; count: number }>;
+    top_types?: Array<{ type: string; count: number }>;
+    rating_stars?: number; // 0-5
+    rating_score?: number; // raw weighted score used to compute stars
     total: number;
     returned_count: number;
     page: number;
@@ -95,10 +99,75 @@ export class PlacesService {
       offset,
     ]);
 
+    // Aggregate counts by amenity (category) inside the radius
+    // Also compute a weighted sum per amenity where weight = 1 / (distance_m / 100 + 1)
+    // so closer places contribute more to the score.
+    const countsQuery = `
+      SELECT
+        amenity AS type,
+        COUNT(*)::int AS count,
+        COALESCE(SUM(1.0 / ((ST_Distance(
+          ST_Transform(way,4326)::geography,
+          ST_SetSRID(ST_MakePoint($2,$3),4326)::geography
+        )/100.0) + 1.0)), 0) AS weight_sum
+      FROM planet_osm_point
+      WHERE amenity IS NOT NULL
+        AND name IS NOT NULL
+        AND ($1::text IS NULL OR amenity = ANY(string_to_array($1::text, ',')))
+        AND ST_DWithin(
+          ST_Transform(way,4326)::geography,
+          ST_SetSRID(ST_MakePoint($2,$3),4326)::geography,
+          $4
+        )
+      GROUP BY amenity
+      ORDER BY count DESC
+    `;
+
+    const countsRows: Array<{
+      type: string;
+      count: number;
+      weight_sum: number;
+    }> = await this.dataSource.query(countsQuery, [
+      type ?? null,
+      lon,
+      lat,
+      safeRadius,
+    ]);
+
+    // Compute aggregated weighted score across all amenities
+    const totalWeight = countsRows.reduce(
+      (acc, r) => acc + Number(r.weight_sum || 0),
+      0,
+    );
+
+    // Map totalWeight to 0-5 stars using heuristic thresholds
+    const mapWeightToStars = (w: number): number => {
+      if (w >= 20) return 5;
+      if (w >= 12) return 4;
+      if (w >= 6) return 3;
+      if (w >= 3) return 2;
+      if (w >= 1) return 1;
+      return 0;
+    };
+
+    const ratingScore = totalWeight;
+    const ratingStars = mapWeightToStars(ratingScore);
+
+    const topTypes = countsRows
+      .slice(0, 3)
+      .map((r) => ({ type: r.type, count: r.count }));
+
     return {
       summary: {
         radius_meters: safeRadius,
         type_filter: type ?? null,
+        counts_by_type: countsRows.map((r) => ({
+          type: r.type,
+          count: r.count,
+        })),
+        top_types: topTypes,
+        rating_stars: ratingStars,
+        rating_score: Number(ratingScore.toFixed(4)),
         total,
         returned_count: data.length,
         page: effectivePage,
