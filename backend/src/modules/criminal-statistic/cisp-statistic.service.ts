@@ -60,11 +60,17 @@ export class CispStatisticService {
     const letalidade = Number(resultado.letalidade);
     const rouboRua = Number(resultado.roubo_rua);
     const rouboVeiculo = Number(resultado.roubo_veiculo);
+    const crimeSafetyStars = this.pontuacaoParaEstrelas(pontuacao);
+
+    // Score normalizado em que 1 representa menor risco e 0 maior risco.
+    const crimeSafetyScore = Number((crimeSafetyStars / 5).toFixed(4));
 
     return {
       sucesso: true,
       delegacia_responsavel: resultado.delegacia,
       indice_risco: this.traduzirPontuacao(pontuacao),
+      crime_safety_stars: crimeSafetyStars,
+      crime_safety_score: crimeSafetyScore,
       dados_brutos: {
         pontuacao_total: pontuacao,
         letalidade_violenta: letalidade,
@@ -79,5 +85,15 @@ export class CispStatisticService {
     if (pontuacao >= 4000) return 'ALTO';
     if (pontuacao >= 1500) return 'MÉDIO';
     return 'BAIXO';
+  }
+
+  private pontuacaoParaEstrelas(pontuacao: number): number {
+    // Quanto maior a pontuação de risco, menor a quantidade de estrelas.
+    if (pontuacao >= 8000) return 0;
+    if (pontuacao >= 6000) return 1;
+    if (pontuacao >= 4000) return 2;
+    if (pontuacao >= 2500) return 3;
+    if (pontuacao >= 1500) return 4;
+    return 5;
   }
 }
