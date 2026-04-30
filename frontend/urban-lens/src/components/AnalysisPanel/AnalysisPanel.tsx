@@ -1,6 +1,7 @@
 import type { PlacesNearbyResponse, TransportResponse, VulnerabilityNearbyResponse, CrimeStatisticResponse } from '../../types';
 import './AnalysisPanel.scss';
 import { useState } from 'react';
+import axios from 'axios';
 
 interface AnalysisPanelProps {
   placesData: PlacesNearbyResponse | null;
@@ -8,10 +9,37 @@ interface AnalysisPanelProps {
   vulnerabilityData: VulnerabilityNearbyResponse | null;
   crimeData: CrimeStatisticResponse | null;
   loading: boolean;
+  selectedLocation: { lat: number; lon: number } | null;
+  searchRadius: number;
+  onPlaceClick?: (place: { name: string; lat: number; lon: number; type: string }) => void;
+  onClearPlaceMarkers?: () => void;
 }
 
-export function AnalysisPanel({ placesData, transportData, vulnerabilityData, crimeData, loading }: AnalysisPanelProps) {
+interface ExpandedCategory {
+  type: string;
+  places: Array<{ name: string; distance: number; lat: number; lon: number }>;
+  page: number;
+  hasMore: boolean;
+  loading: boolean;
+}
+
+export function AnalysisPanel({ 
+  placesData, 
+  transportData, 
+  vulnerabilityData, 
+  crimeData, 
+  loading,
+  selectedLocation,
+  searchRadius,
+  onPlaceClick,
+  onClearPlaceMarkers
+}: AnalysisPanelProps) {
   const [isMinimized, setIsMinimized] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, ExpandedCategory>>({});
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categoryPage, setCategoryPage] = useState(0);
+  const categoriesPerPage = 8;
 
   if (isMinimized) {
     return (
@@ -51,13 +79,97 @@ export function AnalysisPanel({ placesData, transportData, vulnerabilityData, cr
     );
   }
 
-  const placesByType = placesData?.data?.reduce((acc, place) => {
-    if (!acc[place.type]) {
-      acc[place.type] = [];
+  const handlePlaceClick = (place: { name: string; lat: number; lon: number; type: string }, placeId: string) => {
+    setSelectedPlaceId(placeId);
+    if (onPlaceClick) {
+      onPlaceClick(place);
     }
-    acc[place.type].push(place);
-    return acc;
-  }, {} as Record<string, typeof placesData.data>) || {};
+  };
+
+  const handleLoadMorePlaces = async (type: string) => {
+    if (!selectedLocation) return;
+
+    // Se for uma nova categoria, limpa a anterior
+    if (selectedCategory !== type) {
+      setSelectedCategory(type);
+      setExpandedCategories({});
+      setSelectedPlaceId(null);
+    }
+
+    const category = expandedCategories[type];
+    const isFirstLoad = !category;
+
+    if (category?.loading) return;
+
+    if (isFirstLoad) {
+      setExpandedCategories({
+        [type]: {
+          type,
+          places: [],
+          page: 1,
+          hasMore: true,
+          loading: true
+        }
+      });
+    } else {
+      setExpandedCategories(prev => ({
+        ...prev,
+        [type]: { ...prev[type], loading: true }
+      }));
+    }
+
+    try {
+      const nextPage = isFirstLoad ? 1 : category.page + 1;
+      const response = await axios.get<PlacesNearbyResponse>('http://localhost:3000/places/near', {
+        params: {
+          lat: selectedLocation.lat,
+          lon: selectedLocation.lon,
+          radius: searchRadius,
+          type: type,
+          page: nextPage,
+          page_size: 20
+        }
+      });
+
+      const newPlaces = response.data.data.map(p => ({ 
+        name: p.name, 
+        distance: p.distance,
+        lat: p.lat,
+        lon: p.lon
+      }));
+      const allPlaces = isFirstLoad ? newPlaces : [...category.places, ...newPlaces];
+
+      setExpandedCategories({
+        [type]: {
+          type,
+          places: allPlaces,
+          page: nextPage,
+          hasMore: nextPage < response.data.summary.total_pages,
+          loading: false
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao carregar lugares da categoria:', error);
+      if (isFirstLoad) {
+        setExpandedCategories({});
+        setSelectedCategory(null);
+      } else {
+        setExpandedCategories(prev => ({
+          ...prev,
+          [type]: { ...prev[type], loading: false }
+        }));
+      }
+    }
+  };
+
+  const handleCollapseCategory = () => {
+    setExpandedCategories({});
+    setSelectedCategory(null);
+    setSelectedPlaceId(null);
+    if (onClearPlaceMarkers) {
+      onClearPlaceMarkers();
+    }
+  };
 
   return (
     <div className="analysis-panel">
@@ -165,42 +277,145 @@ export function AnalysisPanel({ placesData, transportData, vulnerabilityData, cr
                 <div className="detail-section">
                   <h4 className="detail-section__title">Categorias Principais</h4>
                   <div className="badge-list">
-                    {placesData.summary.top_types.slice(0, 3).map((item: { type: string; count: number }, idx: number) => (
-                      <div key={idx} className="info-badge info-badge--success">
-                        <span className="info-badge__label">{item.type}</span>
-                        <span className="info-badge__value">{item.count}</span>
-                      </div>
-                    ))}
+                    {placesData.summary.top_types.slice(0, 3).map((item: { type: string; count: number }, idx: number) => {
+                      const isActive = selectedCategory === item.type;
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`info-badge info-badge--success info-badge--clickable ${isActive ? 'info-badge--active' : ''}`}
+                          onClick={() => handleLoadMorePlaces(item.type)}
+                        >
+                          <span className="info-badge__label">{item.type}</span>
+                          <span className="info-badge__value">{item.count}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              <div className="detail-section">
-                <h4 className="detail-section__title">Lugares por Categoria</h4>
-                <div className="places-list">
-                  {Object.entries(placesByType).slice(0, 3).map(([type, places]) => (
-                    <div key={type} className="place-group">
-                      <div className="place-group__header">
-                        <span className="place-group__title">{type}</span>
-                        <span className="place-group__count">{places.length}</span>
+              {placesData.summary?.counts_by_type && placesData.summary.counts_by_type.length > 0 && (
+                <div className="detail-section">
+                  <div className="category-header">
+                    <h4 className="detail-section__title">
+                      Todas as Categorias ({placesData.summary.counts_by_type.length})
+                    </h4>
+                    {placesData.summary.counts_by_type.length > categoriesPerPage && (
+                      <div className="category-pagination">
+                        <button 
+                          className="category-pagination__btn"
+                          onClick={() => setCategoryPage(prev => Math.max(0, prev - 1))}
+                          disabled={categoryPage === 0}
+                        >
+                          ◀
+                        </button>
+                        <span className="category-pagination__info">
+                          {categoryPage + 1}/{Math.ceil((placesData.summary.counts_by_type?.length || 0) / categoriesPerPage)}
+                        </span>
+                        <button 
+                          className="category-pagination__btn"
+                          onClick={() => setCategoryPage(prev => Math.min(Math.ceil((placesData.summary.counts_by_type?.length || 0) / categoriesPerPage) - 1, prev + 1))}
+                          disabled={categoryPage >= Math.ceil((placesData.summary.counts_by_type?.length || 0) / categoriesPerPage) - 1}
+                        >
+                          ▶
+                        </button>
                       </div>
-                      <ul className="place-group__list">
-                        {places.slice(0, 3).map((place, idx) => (
-                          <li key={idx} className="place-item">
-                            <span className="place-item__name">{place.name}</span>
-                            <span className="place-item__distance">{Math.round(place.distance)}m</span>
-                          </li>
-                        ))}
-                        {places.length > 3 && (
-                          <li className="place-item place-item--more">
-                            +{places.length - 3} mais
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  ))}
+                    )}
+                  </div>
+                  <div className="category-grid">
+                    {placesData.summary.counts_by_type
+                      .slice(categoryPage * categoriesPerPage, (categoryPage + 1) * categoriesPerPage)
+                      .map((item: { type: string; count: number }, idx: number) => {
+                        const isActive = selectedCategory === item.type;
+                        return (
+                          <div 
+                            key={idx} 
+                            className={`category-card ${isActive ? 'category-card--active' : ''}`}
+                            onClick={() => handleLoadMorePlaces(item.type)}
+                          >
+                            <div className="category-card__content">
+                              <div className="category-card__name">{item.type}</div>
+                              <div className="category-card__count">{item.count}</div>
+                            </div>
+                            {isActive && <div className="category-card__indicator">✓</div>}
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {selectedCategory && expandedCategories[selectedCategory] && (
+                <div className="detail-section">
+                  <div className="category-header">
+                    <h4 className="detail-section__title">
+                      {selectedCategory}
+                    </h4>
+                    <button 
+                      className="category-close-btn"
+                      onClick={handleCollapseCategory}
+                    >
+                      ✕ Fechar
+                    </button>
+                  </div>
+                  <div className="places-list">
+                    {(() => {
+                      const expandedData = expandedCategories[selectedCategory];
+                      const totalCountFromSummary = placesData?.summary?.counts_by_type?.find(
+                        (item) => item.type === selectedCategory
+                      )?.count || expandedData.places.length;
+                      
+                      const displayedCount = expandedData.places.length;
+                      const hasMore = expandedData.hasMore;
+                      const isLoading = expandedData.loading;
+
+                      return (
+                        <div className="place-group">
+                          <ul className="place-group__list">
+                            {expandedData.places.map((place, idx) => {
+                              const placeId = `${selectedCategory}-${idx}`;
+                              const isSelected = selectedPlaceId === placeId;
+                              
+                              return (
+                                <li 
+                                  key={idx} 
+                                  className={`place-item place-item--clickable ${isSelected ? 'place-item--selected' : ''}`}
+                                  onClick={() => handlePlaceClick({ 
+                                    name: place.name, 
+                                    lat: place.lat, 
+                                    lon: place.lon, 
+                                    type: selectedCategory 
+                                  }, placeId)}
+                                >
+                                  <span className="place-item__name">{place.name}</span>
+                                  <span className="place-item__distance">{Math.round(place.distance)}m</span>
+                                </li>
+                              );
+                            })}
+                            {isLoading && (
+                              <li className="place-item place-item--loading">
+                                <div className="place-item__spinner"></div>
+                                <span>Carregando mais...</span>
+                              </li>
+                            )}
+                            {hasMore && !isLoading && (
+                              <li 
+                                className="place-item place-item--load-more" 
+                                onClick={() => handleLoadMorePlaces(selectedCategory)}
+                              >
+                                <span className="place-item__expand-icon">▼</span>
+                                <span className="place-item__expand-text">
+                                  Ver mais ({displayedCount}/{totalCountFromSummary})
+                                </span>
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="empty-state">

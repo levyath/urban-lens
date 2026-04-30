@@ -20,6 +20,19 @@ let DefaultIcon = L.icon({
   iconAnchor: [12, 41],
 });
 
+const GreenIcon = L.icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36">
+      <path fill="#10b981" stroke="#047857" stroke-width="1.5" d="M12 0C7.03 0 3 4.03 3 9c0 6.75 9 18 9 18s9-11.25 9-18c0-4.97-4.03-9-9-9z"/>
+      <circle cx="12" cy="9" r="4" fill="white"/>
+    </svg>
+  `),
+  shadowUrl: iconShadow,
+  iconSize: [24, 36],
+  iconAnchor: [12, 36],
+  popupAnchor: [0, -36],
+});
+
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const API_URL = 'http://localhost:3000';
@@ -88,7 +101,6 @@ function App() {
     
     setSelectedLocation(searchResult);
     setMapCenter([result.lat, result.lon]);
-    setMapZoom(15);
     
     const newMarker: MarkerData = {
       id: `selected-${Date.now()}`,
@@ -150,12 +162,34 @@ function App() {
       setTransportData(transportResponse.data);
       setVulnerabilityData(vulnerabilityResponse.data);
       setCrimeData(crimeResponse.data);
-    } catch (err) {
-      console.error('Erro ao carregar dados de análise:', err);
-      setError('Erro ao carregar dados de análise');
+    } catch (error) {
+      console.error('Erro ao carregar dados de análise:', error);
     } finally {
       setLoadingAnalysis(false);
     }
+  };
+
+  const handlePlaceClick = (place: { name: string; lat: number; lon: number; type: string }) => {
+    const placeMarker: MarkerData = {
+      id: `place-${Date.now()}`,
+      lat: place.lat,
+      lon: place.lon,
+      title: place.name,
+      description: place.type,
+      color: 'green'
+    };
+
+    setMarkers(prev => {
+      const mainMarker = prev.find(m => m.id.startsWith('selected-') || m.id.startsWith('click-'));
+      const filteredMarkers = prev.filter(m => !m.id.startsWith('place-'));
+      return mainMarker ? [...filteredMarkers, placeMarker] : [placeMarker];
+    });
+    setMapCenter([place.lat, place.lon]);
+    setMapZoom(17);
+  };
+
+  const handleClearPlaceMarkers = () => {
+    setMarkers(prev => prev.filter(m => !m.id.startsWith('place-')));
   };
 
   const handleRadiusChange = (newRadius: number) => {
@@ -298,10 +332,14 @@ function App() {
             })}
             
             {markers.map((marker) => (
-              <Marker key={marker.id} position={[marker.lat, marker.lon]}>
+              <Marker 
+                key={marker.id} 
+                position={[marker.lat, marker.lon]}
+                icon={marker.color === 'green' ? GreenIcon : DefaultIcon}
+              >
                 <Popup>
                   <div style={{ minWidth: '200px' }}>
-                    <strong style={{ fontSize: '14px', color: '#111' }}>
+                    <strong style={{ fontSize: '14px', color: marker.color === 'green' ? '#047857' : '#111' }}>
                       {marker.title}
                     </strong>
                     <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#666' }}>
@@ -322,6 +360,10 @@ function App() {
               vulnerabilityData={vulnerabilityData}
               crimeData={crimeData}
               loading={loadingAnalysis}
+              selectedLocation={selectedLocation ? { lat: selectedLocation.lat, lon: selectedLocation.lon } : null}
+              searchRadius={searchRadius}
+              onPlaceClick={handlePlaceClick}
+              onClearPlaceMarkers={handleClearPlaceMarkers}
             />
           )}
 
