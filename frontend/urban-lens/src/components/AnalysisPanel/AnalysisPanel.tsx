@@ -1,6 +1,6 @@
 import type { PlacesNearbyResponse, TransportResponse, VulnerabilityNearbyResponse, CrimeStatisticResponse } from '../../types';
 import './AnalysisPanel.scss';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 interface AnalysisPanelProps {
@@ -40,6 +40,32 @@ export function AnalysisPanel({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryPage, setCategoryPage] = useState(0);
   const categoriesPerPage = 8;
+
+  const prevLocationRef = useRef<{ lat: number; lon: number } | null>(null);
+  const prevRadiusRef = useRef<number>(searchRadius);
+
+  useEffect(() => {
+    const locationChanged = 
+      !prevLocationRef.current || 
+      !selectedLocation ||
+      prevLocationRef.current.lat !== selectedLocation.lat || 
+      prevLocationRef.current.lon !== selectedLocation.lon;
+    
+    const radiusChanged = prevRadiusRef.current !== searchRadius;
+
+    if (locationChanged || radiusChanged) {
+      setExpandedCategories({});
+      setSelectedPlaceId(null);
+      setSelectedCategory(null);
+      setCategoryPage(0);
+      if (onClearPlaceMarkers) {
+        onClearPlaceMarkers();
+      }
+
+      prevLocationRef.current = selectedLocation;
+      prevRadiusRef.current = searchRadius;
+    }
+  }, [selectedLocation, searchRadius, onClearPlaceMarkers]);
 
   if (isMinimized) {
     return (

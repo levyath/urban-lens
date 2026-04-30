@@ -65,11 +65,19 @@ function MapController({ center, zoom }: { center: [number, number], zoom: numbe
   const map = useMap();
   
   useEffect(() => {
-    map.setView(center, zoom, {
+    const currentZoom = map.getZoom();
+    map.setView(center, currentZoom, {
       animate: true,
       duration: 1
     });
-  }, [center, zoom, map]);
+  }, [center, map]);
+  
+  useEffect(() => {
+    map.setZoom(zoom, {
+      animate: true,
+      duration: 1
+    });
+  }, [zoom, map]);
   
   return null;
 }
@@ -194,11 +202,18 @@ function App() {
 
   const handleRadiusChange = (newRadius: number) => {
     setSearchRadius(newRadius);
-    if (selectedLocation) {
+  };
+
+  useEffect(() => {
+    if (!selectedLocation) return;
+
+    const timeoutId = setTimeout(() => {
       loadVulnerabilityAreas(selectedLocation.lat, selectedLocation.lon);
       loadAnalysisData(selectedLocation.lat, selectedLocation.lon);
-    }
-  };
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchRadius]);
 
   const loadVulnerabilityAreas = async (lat: number, lon: number) => {
     try {
