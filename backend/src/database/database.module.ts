@@ -16,7 +16,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE_DB'),
         autoLoadEntities: true,
-        synchronize: true,
+        synchronize: false, // Desabilitado para usar migrations
+        migrations: ['dist/database/migrations/*.js'],
+        migrationsRun: false, // Desabilitado temporariamente
       }),
     }),
   ],

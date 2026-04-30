@@ -4,12 +4,20 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config/dist/config.module';
 import { GeocodeModule } from './modules/geocode/geocode.module';
+import { PlacesModule } from './modules/places/places.module';
+import { TransportsModule } from './modules/transports/transports.module';
+import { VulnerabilityModule } from './modules/vulnerability/vulnerability.module';
+import { CispStatisticModule } from './modules/criminal-statistic/cisp-statistic.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     GeocodeModule,
+    PlacesModule,
+    TransportsModule,
+    VulnerabilityModule,
+    CispStatisticModule,
   ],
   controllers: [AppController],
   providers: [AppService],
