@@ -146,7 +146,8 @@ export function AnalysisPanel({
 
     try {
       const nextPage = isFirstLoad ? 1 : category.page + 1;
-      const response = await axios.get<PlacesNearbyResponse>('http://localhost:3000/places/near', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await axios.get<PlacesNearbyResponse>(`${API_URL}/places/near`, {
         params: {
           lat: selectedLocation.lat,
           lon: selectedLocation.lon,
