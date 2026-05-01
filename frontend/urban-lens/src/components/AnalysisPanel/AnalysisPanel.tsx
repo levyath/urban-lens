@@ -613,8 +613,8 @@ export function AnalysisPanel({
                   <div className="data-card data-card--compact data-card--highlight">
                     <div className="data-card__icon">📊</div>
                     <div className="data-card__content">
-                      <div className="data-card__value">{crimeData.dados_brutos.pontuacao_total}</div>
-                      <div className="data-card__label">Pontuação Total</div>
+                      <div className="data-card__value">{crimeData.dados_brutos.total_furtos}</div>
+                      <div className="data-card__label">Total Furtos</div>
                     </div>
                   </div>
                 </div>
