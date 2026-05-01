@@ -34,7 +34,9 @@ export function AnalysisPanel({
   onPlaceClick,
   onClearPlaceMarkers
 }: AnalysisPanelProps) {
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(() => {
+    return window.innerWidth <= 768;
+  });
   const [expandedCategories, setExpandedCategories] = useState<Record<string, ExpandedCategory>>({});
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -43,6 +45,17 @@ export function AnalysisPanel({
 
   const prevLocationRef = useRef<{ lat: number; lon: number } | null>(null);
   const prevRadiusRef = useRef<number>(searchRadius);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768 && !isMinimized) {
+        setIsMinimized(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMinimized]);
 
   useEffect(() => {
     const locationChanged = 
