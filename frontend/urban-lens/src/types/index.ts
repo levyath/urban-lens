@@ -185,5 +185,6 @@ export interface CrimeStatisticResponse {
     letalidade_violenta: number;
     roubos_rua: number;
     roubos_veiculo: number;
+    total_furtos: number;
   };
 }

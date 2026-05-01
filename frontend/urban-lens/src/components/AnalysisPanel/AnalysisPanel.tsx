@@ -34,7 +34,9 @@ export function AnalysisPanel({
   onPlaceClick,
   onClearPlaceMarkers
 }: AnalysisPanelProps) {
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(() => {
+    return window.innerWidth <= 768;
+  });
   const [expandedCategories, setExpandedCategories] = useState<Record<string, ExpandedCategory>>({});
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -43,6 +45,17 @@ export function AnalysisPanel({
 
   const prevLocationRef = useRef<{ lat: number; lon: number } | null>(null);
   const prevRadiusRef = useRef<number>(searchRadius);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768 && !isMinimized) {
+        setIsMinimized(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMinimized]);
 
   useEffect(() => {
     const locationChanged = 
@@ -146,7 +159,8 @@ export function AnalysisPanel({
 
     try {
       const nextPage = isFirstLoad ? 1 : category.page + 1;
-      const response = await axios.get<PlacesNearbyResponse>('http://localhost:3000/places/near', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await axios.get<PlacesNearbyResponse>(`${API_URL}/places/near`, {
         params: {
           lat: selectedLocation.lat,
           lon: selectedLocation.lon,
@@ -599,8 +613,8 @@ export function AnalysisPanel({
                   <div className="data-card data-card--compact data-card--highlight">
                     <div className="data-card__icon">📊</div>
                     <div className="data-card__content">
-                      <div className="data-card__value">{crimeData.dados_brutos.pontuacao_total}</div>
-                      <div className="data-card__label">Pontuação Total</div>
+                      <div className="data-card__value">{crimeData.dados_brutos.total_furtos}</div>
+                      <div className="data-card__label">Total Furtos</div>
                     </div>
                   </div>
                 </div>
