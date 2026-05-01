@@ -10,6 +10,7 @@ interface CispRiskRow {
   letalidade: number | string;
   roubo_rua: number | string;
   roubo_veiculo: number | string;
+  total_furtos: number | string;
 }
 
 @Injectable()
@@ -38,6 +39,7 @@ export class CispStatisticService {
         'stats.letalidade_violenta AS letalidade',
         'stats.roubo_rua AS roubo_rua',
         'stats.roubo_veiculo AS roubo_veiculo',
+        'stats.total_furtos AS total_furtos',
       ])
       .where(
         `ST_Intersects(
@@ -60,6 +62,7 @@ export class CispStatisticService {
     const letalidade = Number(resultado.letalidade);
     const rouboRua = Number(resultado.roubo_rua);
     const rouboVeiculo = Number(resultado.roubo_veiculo);
+    const totalFurtos = Number(resultado.total_furtos);
     const crimeSafetyStars = this.pontuacaoParaEstrelas(pontuacao);
 
     // Score normalizado em que 1 representa menor risco e 0 maior risco.
@@ -76,6 +79,7 @@ export class CispStatisticService {
         letalidade_violenta: letalidade,
         roubos_rua: rouboRua,
         roubos_veiculo: rouboVeiculo,
+        total_furtos: totalFurtos,
       },
     };
   }
